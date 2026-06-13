@@ -1,0 +1,94 @@
+{
+  "nav.chat": "Chat",
+  "nav.config": "Config",
+  "nav.guide": "Guide",
+
+  "pref.title": "Preferences",
+  "pref.font.label": "Chat font",
+  "pref.font.system": "System (default)",
+  "pref.font.custom": "Custom (Google Fonts)…",
+  "pref.font.custom.placeholder": "e.g. Playfair Display",
+  "pref.font.preview": "Preview — chat text will appear in this font.",
+  "pref.lang.label": "Language",
+
+  "layout.title": "Panel layout",
+  "layout.panel": "Panel {{n}}",
+
+  "slot.none": "— None —",
+
+  "endpoint.list.title": "Configured endpoints",
+  "endpoint.export": "⬇ Export",
+  "endpoint.import": "⬆ Import",
+  "endpoint.add": "+ Add",
+  "endpoint.empty": "No endpoints configured.",
+  "endpoint.edit": "Edit",
+  "endpoint.clone": "Clone endpoint",
+  "endpoint.delete": "Delete",
+  "endpoint.delete.confirm": "Delete this endpoint?",
+  "endpoint.drag.hint": "Drag to reorder",
+
+  "import.confirm": "Import {{count}} endpoint(s)? The current configuration will be replaced.",
+  "import.invalid": "Invalid format",
+  "import.error": "Import error: {{msg}}",
+
+  "editor.new": "New Endpoint",
+  "editor.edit": "Edit Endpoint",
+  "editor.default_name": "New Endpoint",
+  "editor.name": "Name",
+  "editor.name.placeholder": "e.g. llama.cpp local",
+  "editor.url": "Server URL",
+  "editor.rawurl": "Full URL — do not append /v1/chat/completions",
+  "editor.model": "Model",
+  "editor.model.placeholder": "e.g. gpt-4o (leave blank for server default)",
+  "editor.apikey": "API Key (Bearer Token)",
+  "editor.apikey.placeholder": "sk-… (optional)",
+  "editor.systemprompt": "System Prompt",
+  "editor.systemprompt.placeholder": "You are a concise and accurate AI assistant.",
+  "editor.temperature": "Temperature",
+  "editor.top_p": "Top-P",
+  "editor.max_tokens": "Max Tokens",
+  "editor.repeat_penalty": "Repeat Penalty",
+  "editor.cancel": "Cancel",
+  "editor.save": "Save",
+
+  "panel.no_endpoint": "— No endpoint —",
+  "panel.console.title": "HTTP Console",
+  "panel.export.title": "Export chat",
+  "panel.export.md": "Markdown",
+  "panel.export.json": "JSON",
+  "panel.clear.title": "Clear panel",
+  "panel.input.placeholder": "Type…",
+
+  "console.empty": "No activity recorded.",
+
+  "input.placeholder": "Write a message…",
+  "input.send": "Send",
+  "input.stop": "Stop",
+  "input.attach.title": "Attach file",
+  "input.clear_all.title": "Clear all chats",
+
+  "broadcast.on": "⇉ Broadcast",
+  "broadcast.off": "⇥ Per panel",
+  "broadcast.on.title": "Shared input — click for independent per-panel input",
+  "broadcast.off.title": "Per-panel input — click for shared broadcast input",
+
+  "export.role.user": "User",
+  "export.role.assistant": "Assistant",
+  "export.md.title": "Chat — {{name}}",
+  "export.md.date": "Exported on {{date}}",
+
+  "stream.interrupted": "⏹ Generation stopped",
+  "error.connection": "Connection error.",
+  "error.backend_unreachable": "⚠ Backend unreachable — start the server with uvicorn",
+
+  "file.read_error": "Error reading \"{{name}}\": {{msg}}",
+  "pdf.unavailable": "PDF.js not available",
+
+  "token.unit": "tk",
+
+  "think.label": "⚙ Reasoning",
+  "regen.btn": "↺ Regenerate",
+
+  "guide.loading": "Loading…",
+  "guide.error": "Error loading guide: {{msg}}"
+}

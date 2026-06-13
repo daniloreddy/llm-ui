@@ -4,7 +4,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>LLM UI</title>
-  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="tw.css" />
   <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/dompurify/3.1.6/purify.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/marked@9/marked.min.js"></script>
@@ -16,51 +16,86 @@
 
   <!-- Nav -->
   <nav class="flex-shrink-0 border-b border-slate-700 bg-slate-800 px-4 flex items-center gap-2 h-12">
-    <button class="tab-btn px-4 py-1.5 rounded text-sm font-medium transition-colors" data-tab="chat">Chat</button>
-    <button class="tab-btn px-4 py-1.5 rounded text-sm font-medium transition-colors" data-tab="endpoint">Endpoint</button>
-    <span id="status-dot" class="ml-auto w-2 h-2 rounded-full bg-slate-600" title="Stato server"></span>
+    <button class="tab-btn px-4 py-1.5 rounded text-sm font-medium transition-colors" data-tab="chat" data-i18n="nav.chat">Chat</button>
+    <button class="tab-btn px-4 py-1.5 rounded text-sm font-medium transition-colors" data-tab="config" data-i18n="nav.config">Config</button>
+    <button class="tab-btn px-4 py-1.5 rounded text-sm font-medium transition-colors" data-tab="guida" data-i18n="nav.guide">Guida</button>
+    <button id="broadcast-toggle-btn" class="ml-auto text-xs text-slate-400 hover:text-slate-200 px-2.5 py-1 rounded hover:bg-slate-700 transition-colors" title="Modalità input"></button>
+    <span id="status-dot" class="w-2 h-2 rounded-full bg-slate-600" title="Stato server"></span>
   </nav>
 
   <!-- ====== TAB CHAT ====== -->
   <div id="panel-chat" class="tab-panel flex flex-col flex-1 min-h-0">
     <div id="chat-grid" class="flex-1 min-h-0 layout-1"></div>
 
-    <div class="flex-shrink-0 border-t border-slate-700 bg-slate-800">
+    <div id="global-input-bar" class="flex-shrink-0 border-t border-slate-700 bg-slate-800">
       <div id="attachments-preview" class="hidden flex-wrap gap-2 px-3 pt-2"></div>
       <div class="p-3 flex gap-2 items-end">
         <input id="file-input" type="file" multiple class="hidden"
           accept=".txt,.md,.json,.csv,.xml,.yaml,.yml,.html,.js,.ts,.py,.java,.c,.cpp,.go,.rs,.pdf,image/*" />
         <button id="attach-btn"
           class="flex-shrink-0 bg-slate-700 hover:bg-slate-600 text-slate-300 hover:text-slate-100 px-3 py-2 rounded-lg text-base transition-colors h-10"
-          title="Allega file">📎</button>
+          title="Allega file" data-i18n-title="input.attach.title">📎</button>
         <textarea id="user-input" rows="1"
           class="flex-1 resize-none bg-slate-700 text-slate-100 placeholder-slate-400 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 max-h-40 min-h-[2.5rem]"
-          placeholder="Scrivi un messaggio…"></textarea>
+          placeholder="Scrivi un messaggio…" data-i18n-placeholder="input.placeholder"></textarea>
         <button id="send-btn"
           class="flex-shrink-0 bg-indigo-600 hover:bg-indigo-500 active:bg-indigo-700 disabled:opacity-40 disabled:cursor-not-allowed text-white px-3 sm:px-4 py-2 rounded-lg text-sm font-medium transition-colors h-10"
           title="Invia">
-          <span class="hidden sm:inline">Invia</span>
+          <span class="hidden sm:inline" data-i18n="input.send">Invia</span>
           <span class="sm:hidden" aria-hidden="true">➤</span>
         </button>
         <button id="stop-btn"
           class="hidden flex-shrink-0 bg-red-700 hover:bg-red-600 active:bg-red-800 text-white px-3 sm:px-4 py-2 rounded-lg text-sm font-medium transition-colors h-10"
           title="Interrompi generazione">
-          <span class="hidden sm:inline">Stop</span>
+          <span class="hidden sm:inline" data-i18n="input.stop">Stop</span>
           <span class="sm:hidden" aria-hidden="true">⏹</span>
         </button>
         <button id="clear-all-btn"
           class="flex-shrink-0 bg-slate-700 hover:bg-slate-600 text-slate-300 px-3 py-2 rounded-lg text-sm transition-colors h-10"
-          title="Pulisci tutte le chat">↺</button>
+          title="Pulisci tutte le chat" data-i18n-title="input.clear_all.title">↺</button>
       </div>
     </div>
   </div>
 
-  <!-- ====== TAB ENDPOINT ====== -->
-  <div id="panel-endpoint" class="tab-panel hidden flex-1 overflow-y-auto px-4 sm:px-6 py-4 sm:py-6 space-y-8 max-w-2xl w-full mx-auto">
+  <!-- ====== TAB CONFIG ====== -->
+  <div id="panel-config" class="tab-panel hidden flex-1 overflow-y-auto px-4 sm:px-6 py-4 sm:py-6 space-y-8 max-w-2xl w-full mx-auto">
+
+    <!-- Preferenze -->
+    <section class="space-y-4">
+      <h2 class="text-xs font-semibold text-slate-400 uppercase tracking-wider" data-i18n="pref.title">Preferenze</h2>
+      <div class="space-y-2">
+        <label class="block text-xs font-semibold text-slate-400 uppercase tracking-wider" data-i18n="pref.font.label">Font chat</label>
+        <div class="flex gap-2 flex-wrap items-start">
+          <select id="pref-font-select"
+            class="bg-slate-700 text-slate-100 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500">
+            <option value="system" data-i18n="pref.font.system">Sistema (default)</option>
+            <option value="inter">Inter</option>
+            <option value="roboto">Roboto</option>
+            <option value="source">Source Sans 3</option>
+            <option value="lato">Lato</option>
+            <option value="mono">JetBrains Mono</option>
+            <option value="custom" data-i18n="pref.font.custom">Personalizzato (Google Fonts)…</option>
+          </select>
+          <input id="pref-font-custom" type="text" placeholder="es. Playfair Display"
+            class="hidden flex-1 min-w-[180px] bg-slate-700 text-slate-100 placeholder-slate-400 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+            data-i18n-placeholder="pref.font.custom.placeholder" />
+        </div>
+        <p id="pref-font-preview" class="text-sm text-slate-400 px-1 pt-1" data-i18n="pref.font.preview">
+          Anteprima — il testo delle chat apparirà con questo font.
+        </p>
+      </div>
+      <div class="space-y-2">
+        <label class="block text-xs font-semibold text-slate-400 uppercase tracking-wider" data-i18n="pref.lang.label">Lingua</label>
+        <select id="pref-lang-select" class="bg-slate-700 text-slate-100 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500">
+          <option value="it">Italiano</option>
+          <option value="en">English</option>
+        </select>
+      </div>
+    </section>
 
     <!-- Layout picker -->
     <section class="space-y-4">
-      <h2 class="text-xs font-semibold text-slate-400 uppercase tracking-wider">Layout pannelli</h2>
+      <h2 class="text-xs font-semibold text-slate-400 uppercase tracking-wider" data-i18n="layout.title">Layout pannelli</h2>
       <div class="flex gap-3 flex-wrap">
         <button class="layout-btn" data-count="1">
           <div class="lp lp-1"><div></div></div>
@@ -83,19 +118,19 @@
       <!-- Slot assignment -->
       <div class="grid grid-cols-2 gap-3">
         <div class="slot-card space-y-1">
-          <label class="text-xs text-slate-500">Pannello 1</label>
+          <label class="text-xs text-slate-500" data-i18n="layout.panel" data-i18n-n="1">Pannello 1</label>
           <select class="slot-selector w-full bg-slate-700 text-slate-100 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500" data-slot="0"></select>
         </div>
         <div class="slot-card space-y-1">
-          <label class="text-xs text-slate-500">Pannello 2</label>
+          <label class="text-xs text-slate-500" data-i18n="layout.panel" data-i18n-n="2">Pannello 2</label>
           <select class="slot-selector w-full bg-slate-700 text-slate-100 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500" data-slot="1"></select>
         </div>
         <div class="slot-card space-y-1">
-          <label class="text-xs text-slate-500">Pannello 3</label>
+          <label class="text-xs text-slate-500" data-i18n="layout.panel" data-i18n-n="3">Pannello 3</label>
           <select class="slot-selector w-full bg-slate-700 text-slate-100 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500" data-slot="2"></select>
         </div>
         <div class="slot-card space-y-1">
-          <label class="text-xs text-slate-500">Pannello 4</label>
+          <label class="text-xs text-slate-500" data-i18n="layout.panel" data-i18n-n="4">Pannello 4</label>
           <select class="slot-selector w-full bg-slate-700 text-slate-100 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500" data-slot="3"></select>
         </div>
       </div>
@@ -105,14 +140,14 @@
     <section class="space-y-3">
       <input id="config-import-input" type="file" accept=".json" class="hidden" />
       <div class="flex items-center justify-between gap-2">
-        <h2 class="text-xs font-semibold text-slate-400 uppercase tracking-wider">Endpoint configurati</h2>
+        <h2 class="text-xs font-semibold text-slate-400 uppercase tracking-wider" data-i18n="endpoint.list.title">Endpoint configurati</h2>
         <div class="flex gap-2">
           <button id="export-config-btn"
-            class="text-xs text-slate-400 hover:text-slate-200 px-2 py-1.5 rounded-lg hover:bg-slate-700 transition-colors" title="Esporta configurazione">⬇ Esporta</button>
+            class="text-xs text-slate-400 hover:text-slate-200 px-2 py-1.5 rounded-lg hover:bg-slate-700 transition-colors" title="Esporta configurazione" data-i18n="endpoint.export">⬇ Esporta</button>
           <button id="import-config-btn"
-            class="text-xs text-slate-400 hover:text-slate-200 px-2 py-1.5 rounded-lg hover:bg-slate-700 transition-colors" title="Importa configurazione">⬆ Importa</button>
+            class="text-xs text-slate-400 hover:text-slate-200 px-2 py-1.5 rounded-lg hover:bg-slate-700 transition-colors" title="Importa configurazione" data-i18n="endpoint.import">⬆ Importa</button>
           <button id="add-endpoint-btn"
-            class="text-xs bg-indigo-600 hover:bg-indigo-500 text-white px-3 py-1.5 rounded-lg transition-colors">+ Aggiungi</button>
+            class="text-xs bg-indigo-600 hover:bg-indigo-500 text-white px-3 py-1.5 rounded-lg transition-colors" data-i18n="endpoint.add">+ Aggiungi</button>
         </div>
       </div>
       <div id="endpoint-list" class="space-y-2"></div>
@@ -123,60 +158,64 @@
       <h3 id="editor-title" class="text-sm font-semibold text-indigo-300">Nuovo Endpoint</h3>
 
       <div class="space-y-1">
-        <label class="block text-xs font-semibold text-slate-400 uppercase tracking-wider">Nome</label>
+        <label class="block text-xs font-semibold text-slate-400 uppercase tracking-wider" data-i18n="editor.name">Nome</label>
         <input id="f-name" type="text" placeholder="es. llama.cpp local"
-          class="w-full bg-slate-700 text-slate-100 placeholder-slate-400 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500" />
+          class="w-full bg-slate-700 text-slate-100 placeholder-slate-400 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+          data-i18n-placeholder="editor.name.placeholder" />
       </div>
       <div class="space-y-1">
-        <label class="block text-xs font-semibold text-slate-400 uppercase tracking-wider">Server URL</label>
+        <label class="block text-xs font-semibold text-slate-400 uppercase tracking-wider" data-i18n="editor.url">Server URL</label>
         <input id="f-server-url" type="text" placeholder="http://127.0.0.1:8080"
           class="w-full bg-slate-700 text-slate-100 placeholder-slate-400 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500" />
         <label class="flex items-center gap-2 mt-1 cursor-pointer w-fit">
           <input id="f-raw-url" type="checkbox"
             class="w-3.5 h-3.5 accent-indigo-500 cursor-pointer" />
-          <span class="text-xs text-slate-400">URL completo — non aggiungere <code class="text-slate-300">/v1/chat/completions</code></span>
+          <span class="text-xs text-slate-400" data-i18n="editor.rawurl">URL completo — non aggiungere <code class="text-slate-300">/v1/chat/completions</code></span>
         </label>
       </div>
       <div class="space-y-1">
-        <label class="block text-xs font-semibold text-slate-400 uppercase tracking-wider">Model</label>
+        <label class="block text-xs font-semibold text-slate-400 uppercase tracking-wider" data-i18n="editor.model">Model</label>
         <input id="f-model" type="text" placeholder="es. gpt-4o (lascia vuoto per default)"
-          class="w-full bg-slate-700 text-slate-100 placeholder-slate-400 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500" />
+          class="w-full bg-slate-700 text-slate-100 placeholder-slate-400 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+          data-i18n-placeholder="editor.model.placeholder" />
       </div>
       <div class="space-y-1">
-        <label class="block text-xs font-semibold text-slate-400 uppercase tracking-wider">API Key (Bearer Token)</label>
+        <label class="block text-xs font-semibold text-slate-400 uppercase tracking-wider" data-i18n="editor.apikey">API Key (Bearer Token)</label>
         <div class="relative">
           <input id="f-api-key" type="password" placeholder="sk-… (opzionale)"
-            class="w-full bg-slate-700 text-slate-100 placeholder-slate-400 rounded-lg px-3 py-2 pr-10 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500" />
+            class="w-full bg-slate-700 text-slate-100 placeholder-slate-400 rounded-lg px-3 py-2 pr-10 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+            data-i18n-placeholder="editor.apikey.placeholder" />
           <button id="f-toggle-api-key" type="button"
             class="absolute right-2 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-200 text-xs transition-colors select-none">👁</button>
         </div>
       </div>
       <div class="space-y-1">
-        <label class="block text-xs font-semibold text-slate-400 uppercase tracking-wider">System Prompt</label>
+        <label class="block text-xs font-semibold text-slate-400 uppercase tracking-wider" data-i18n="editor.systemprompt">System Prompt</label>
         <textarea id="f-system-prompt" rows="4"
           class="w-full resize-none bg-slate-700 text-slate-100 placeholder-slate-400 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
-          placeholder="Sei un assistente AI conciso e preciso."></textarea>
+          placeholder="Sei un assistente AI conciso e preciso."
+          data-i18n-placeholder="editor.systemprompt.placeholder"></textarea>
       </div>
 
       <!-- Sliders -->
       <div class="space-y-4">
         <div class="space-y-1">
-          <div class="flex justify-between"><label class="text-xs font-semibold text-slate-400 uppercase tracking-wider">Temperature</label><span id="f-val-temperature" class="text-sm font-mono text-indigo-400">0.7</span></div>
+          <div class="flex justify-between"><label class="text-xs font-semibold text-slate-400 uppercase tracking-wider" data-i18n="editor.temperature">Temperature</label><span id="f-val-temperature" class="text-sm font-mono text-indigo-400">0.7</span></div>
           <input id="f-slider-temperature" type="range" min="0" max="2" step="0.1" value="0.7" class="slider w-full" />
           <div class="flex justify-between text-xs text-slate-500"><span>0.0</span><span>2.0</span></div>
         </div>
         <div class="space-y-1">
-          <div class="flex justify-between"><label class="text-xs font-semibold text-slate-400 uppercase tracking-wider">Top-P</label><span id="f-val-top_p" class="text-sm font-mono text-indigo-400">0.9</span></div>
+          <div class="flex justify-between"><label class="text-xs font-semibold text-slate-400 uppercase tracking-wider" data-i18n="editor.top_p">Top-P</label><span id="f-val-top_p" class="text-sm font-mono text-indigo-400">0.9</span></div>
           <input id="f-slider-top_p" type="range" min="0" max="1" step="0.05" value="0.9" class="slider w-full" />
           <div class="flex justify-between text-xs text-slate-500"><span>0.0</span><span>1.0</span></div>
         </div>
         <div class="space-y-1">
-          <div class="flex justify-between"><label class="text-xs font-semibold text-slate-400 uppercase tracking-wider">Max Tokens</label><span id="f-val-max_tokens" class="text-sm font-mono text-indigo-400">1024</span></div>
+          <div class="flex justify-between"><label class="text-xs font-semibold text-slate-400 uppercase tracking-wider" data-i18n="editor.max_tokens">Max Tokens</label><span id="f-val-max_tokens" class="text-sm font-mono text-indigo-400">1024</span></div>
           <input id="f-slider-max_tokens" type="range" min="0" max="262144" step="256" value="1024" class="slider w-full" />
           <div class="flex justify-between text-xs text-slate-500"><span>∞ (0)</span><span>256K</span></div>
         </div>
         <div class="space-y-1">
-          <div class="flex justify-between"><label class="text-xs font-semibold text-slate-400 uppercase tracking-wider">Repeat Penalty</label><span id="f-val-repeat_penalty" class="text-sm font-mono text-indigo-400">1.1</span></div>
+          <div class="flex justify-between"><label class="text-xs font-semibold text-slate-400 uppercase tracking-wider" data-i18n="editor.repeat_penalty">Repeat Penalty</label><span id="f-val-repeat_penalty" class="text-sm font-mono text-indigo-400">1.1</span></div>
           <input id="f-slider-repeat_penalty" type="range" min="1" max="1.5" step="0.05" value="1.1" class="slider w-full" />
           <div class="flex justify-between text-xs text-slate-500"><span>1.0</span><span>1.5</span></div>
         </div>
@@ -184,11 +223,16 @@
 
       <div class="flex gap-2 justify-end pt-2 border-t border-slate-700">
         <button id="editor-cancel"
-          class="px-4 py-2 text-sm text-slate-400 hover:text-slate-200 rounded-lg hover:bg-slate-700 transition-colors">Annulla</button>
+          class="px-4 py-2 text-sm text-slate-400 hover:text-slate-200 rounded-lg hover:bg-slate-700 transition-colors" data-i18n="editor.cancel">Annulla</button>
         <button id="editor-save"
-          class="px-4 py-2 text-sm bg-indigo-600 hover:bg-indigo-500 text-white rounded-lg transition-colors font-medium">Salva</button>
+          class="px-4 py-2 text-sm bg-indigo-600 hover:bg-indigo-500 text-white rounded-lg transition-colors font-medium" data-i18n="editor.save">Salva</button>
       </div>
     </section>
+  </div>
+
+  <!-- ====== TAB GUIDA ====== -->
+  <div id="panel-guida" class="tab-panel hidden flex-1 overflow-y-auto px-4 sm:px-6 py-6 sm:py-8 max-w-2xl w-full mx-auto">
+    <div class="guide"><p class="text-slate-500 text-sm" data-i18n="guide.loading">Caricamento…</p></div>
   </div>
 
   <script src="app.js"></script>

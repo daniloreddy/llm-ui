@@ -35,7 +35,7 @@ class ConfigManager:
 
     async def save(self, data: dict[str, Any]) -> None:
         async with self._lock:
-            self._data = data
+            self._data = copy.deepcopy(data)
             self._path.parent.mkdir(parents=True, exist_ok=True)
             tmp = self._path.with_suffix(".tmp")
             tmp.write_text(

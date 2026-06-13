@@ -29,3 +29,9 @@ Thumbs.db
 .vscode/
 .idea/
 *.swp
+
+# Tailwind CSS binary (scaricato da setup-tailwind.sh/.bat)
+bin/
+
+# CSS generato (prodotto da tailwindcss -i ... -o ...)
+static/tw.css

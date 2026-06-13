@@ -7,7 +7,7 @@
 function makeEndpoint(overrides = {}) {
   return {
     id: crypto.randomUUID(),
-    name: 'Nuovo Endpoint',
+    name: t('editor.default_name'),
     serverUrl: 'http://127.0.0.1:8080',
     useRawUrl: false,
     model: '',
@@ -26,7 +26,17 @@ function makeEndpoint(overrides = {}) {
 // ============================================================
 
 let endpoints = [];
-let layout = { count: 1, slots: [null, null, null, null] };
+let layout = { count: 1, slots: [null, null, null, null], broadcastMode: false };
+let prefs = { fontFamily: 'system', googleFont: '', lang: 'it' };
+
+const FONTS = {
+  system: { label: 'Sistema',        css: '-apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif', gf: null },
+  inter:  { label: 'Inter',          css: '"Inter", sans-serif',               gf: 'Inter' },
+  roboto: { label: 'Roboto',         css: '"Roboto", sans-serif',              gf: 'Roboto' },
+  source: { label: 'Source Sans 3',  css: '"Source Sans 3", sans-serif',       gf: 'Source+Sans+3' },
+  lato:   { label: 'Lato',           css: '"Lato", sans-serif',                gf: 'Lato' },
+  mono:   { label: 'JetBrains Mono', css: '"JetBrains Mono", monospace',       gf: 'JetBrains+Mono' },
+};
 
 let _saveTimer = null;
 function saveState() {
@@ -35,7 +45,7 @@ function saveState() {
     fetch('/api/config', {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ endpoints, layout }),
+      body: JSON.stringify({ endpoints, layout, prefs }),
     }).catch((err) => console.error('[llm-ui] saveState failed:', err));
   }, 300);
 }
@@ -46,7 +56,11 @@ async function loadState() {
     if (res.ok) {
       const saved = await res.json();
       endpoints = Array.isArray(saved.endpoints) ? saved.endpoints : [];
-      layout = saved.layout || { count: 1, slots: [null, null, null, null] };
+      layout = saved.layout || { count: 1, slots: [null, null, null, null], broadcastMode: false };
+      if (layout.broadcastMode === undefined) layout.broadcastMode = false;
+      prefs = saved.prefs || { fontFamily: 'system', googleFont: '', lang: 'it' };
+      if (!prefs.fontFamily) prefs.fontFamily = 'system';
+      if (!prefs.lang) prefs.lang = 'it';
     }
   } catch { /* use defaults */ }
 
@@ -71,10 +85,22 @@ const panelStates = Array.from({ length: 4 }, () => ({
   history: [],
   isStreaming: false,
   messagesEl: null,
-  logs: [],          // { ts, level: 'info'|'warn'|'error', text }
+  logs: [],
   showConsole: false,
   consoleEl: null,
   consoleBtnEl: null,
+  attachedFiles: [],
+  abortController: null,
+  inputEl: null,
+  attachPreviewEl: null,
+  stopBtnEl: null,
+  sendBtnEl: null,
+  tokenCountEl: null,
+  historyCursor: -1,
+  promptDraft: '',
+  lastUserMsg: null,
+  lastAssistantWrapper: null,
+  lastRegenRow: null,
 }));
 
 /** @type {Array<{name:string, kind:'text'|'image'|'pdf', content:string, dataUrl?:string}>} */
@@ -82,6 +108,10 @@ let attachedFiles = [];
 let editingEndpointId = null;
 let dragSrcIdx = null;
 let activeAbortControllers = [];
+
+const promptHistory = [];
+let bcastHistoryCursor = -1;
+let bcastPromptDraft = '';
 
 // ============================================================
 // DOM refs
@@ -91,7 +121,8 @@ const $ = (id) => document.getElementById(id);
 
 const tabBtns           = document.querySelectorAll('.tab-btn');
 const panelChatEl       = $('panel-chat');
-const panelEndpointEl   = $('panel-endpoint');
+const panelConfigEl     = $('panel-config');
+const panelGuidaEl      = $('panel-guida');
 const chatGrid          = $('chat-grid');
 const userInput         = $('user-input');
 const sendBtn           = $('send-btn');
@@ -103,7 +134,13 @@ const attachmentsPreview = $('attachments-preview');
 const statusDot         = $('status-dot');
 const endpointListEl    = $('endpoint-list');
 const addEndpointBtn    = $('add-endpoint-btn');
-const exportConfigBtn   = $('export-config-btn');
+const globalInputBar    = $('global-input-bar');
+const broadcastToggleBtn  = $('broadcast-toggle-btn');
+const prefFontSelect      = $('pref-font-select');
+const prefFontCustom      = $('pref-font-custom');
+const prefFontPreview     = $('pref-font-preview');
+const prefLangSelect      = $('pref-lang-select');
+const exportConfigBtn     = $('export-config-btn');
 const importConfigBtn   = $('import-config-btn');
 const configImportInput = $('config-import-input');
 const editorSection     = $('endpoint-editor');
@@ -129,6 +166,63 @@ const editorSliders = {
 };
 
 // ============================================================
+// i18n
+// ============================================================
+
+let _t = {};
+
+function t(key, vars = {}) {
+  let str = _t[key] ?? key;
+  for (const [k, v] of Object.entries(vars)) {
+    str = str.replace(new RegExp(`\\{\\{${k}\\}\\}`, 'g'), String(v));
+  }
+  return str;
+}
+
+async function loadTranslations(lang) {
+  try {
+    const res = await fetch(`i18n/${lang}.json`);
+    if (!res.ok) throw new Error();
+    _t = await res.json();
+  } catch {
+    _t = {};
+  }
+}
+
+function applyTranslations() {
+  document.documentElement.lang = prefs.lang;
+  document.querySelectorAll('[data-i18n]').forEach((el) => {
+    const vars = {};
+    for (const [k, v] of Object.entries(el.dataset)) {
+      if (k !== 'i18n' && k.startsWith('i18n')) {
+        vars[k[4].toLowerCase() + k.slice(5)] = v;
+      }
+    }
+    el.textContent = t(el.dataset.i18n, vars);
+  });
+  document.querySelectorAll('[data-i18n-placeholder]').forEach((el) => {
+    el.placeholder = t(el.dataset.i18nPlaceholder);
+  });
+  document.querySelectorAll('[data-i18n-title]').forEach((el) => {
+    el.title = t(el.dataset.i18nTitle);
+  });
+}
+
+function syncLangUI() {
+  if (prefLangSelect) prefLangSelect.value = prefs.lang;
+}
+
+// Copy-code button (event delegation — works on dynamically created buttons)
+document.addEventListener('click', (e) => {
+  if (!e.target.classList.contains('copy-code-btn')) return;
+  const code = e.target.nextElementSibling?.innerText ?? '';
+  navigator.clipboard.writeText(code).then(() => {
+    e.target.textContent = '✓';
+    setTimeout(() => { e.target.textContent = '⎘'; }, 1500);
+  }).catch(() => {});
+});
+
+// ============================================================
 // PDF.js worker
 // ============================================================
 
@@ -149,28 +243,68 @@ if (typeof marked !== 'undefined' && typeof hljs !== 'undefined') {
       code(code, lang) {
         const language = hljs.getLanguage(lang) ? lang : 'plaintext';
         const highlighted = hljs.highlight(code, { language }).value;
-        return `<pre><code class="hljs language-${language}">${highlighted}</code></pre>`;
+        return `<pre><button class="copy-code-btn" title="Copia codice">⎘</button><code class="hljs language-${language}">${highlighted}</code></pre>`;
       },
     },
   });
 }
 
+function buildThinkBlock(content) {
+  const inner = typeof marked !== 'undefined' ? marked.parse(content) : escapeHtml(content).replace(/\n/g, '<br>');
+  const safe = typeof DOMPurify !== 'undefined' ? DOMPurify.sanitize(inner) : inner;
+  return `<details class="think-block"><summary>${t('think.label')}</summary><div class="think-content">${safe}</div></details>`;
+}
+
 function parseMarkdown(text) {
   if (!text) return '';
+
+  // Extract <think>/<thinking> blocks before markdown parsing
+  const thinkBlocks = [];
+  const processed = text.replace(/<(think|thinking)>([\s\S]*?)<\/\1>/gi, (_, _t, content) => {
+    thinkBlocks.push(content.trim());
+    return `\n\nLLMUI_THINK_${thinkBlocks.length - 1}\n\n`;
+  });
+
+  let html;
   if (typeof marked === 'undefined') {
-    return escapeHtml(text).replace(/\n/g, '<br>');
+    html = escapeHtml(processed).replace(/\n/g, '<br>');
+  } else {
+    html = marked.parse(processed);
+    if (typeof DOMPurify !== 'undefined') html = DOMPurify.sanitize(html);
   }
-  const html = marked.parse(text);
-  return typeof DOMPurify !== 'undefined' ? DOMPurify.sanitize(html) : html;
+
+  thinkBlocks.forEach((content, idx) => {
+    html = html.replace(`<p>LLMUI_THINK_${idx}</p>`, buildThinkBlock(content));
+    html = html.replace(`LLMUI_THINK_${idx}`, buildThinkBlock(content));
+  });
+
+  return html;
 }
 
 // ============================================================
 // Tab switching
 // ============================================================
 
+let _guideLoaded = false;
+async function loadGuide() {
+  if (_guideLoaded) return;
+  const lang = prefs.lang || 'it';
+  try {
+    let res = await fetch(`guide/${lang}.html`);
+    if (!res.ok) res = await fetch('guide/it.html');
+    panelGuidaEl.querySelector('.guide').innerHTML = await res.text();
+    _guideLoaded = true;
+  } catch (err) {
+    panelGuidaEl.querySelector('.guide').innerHTML =
+      `<p class="text-red-400">${t('guide.error', { msg: escapeHtml(err.message) })}</p>`;
+  }
+}
+
 function switchTab(name) {
+  if (name === 'guida') loadGuide();
   panelChatEl.classList.toggle('hidden', name !== 'chat');
-  panelEndpointEl.classList.toggle('hidden', name !== 'endpoint');
+  panelConfigEl.classList.toggle('hidden', name !== 'config');
+  panelGuidaEl.classList.toggle('hidden', name !== 'guida');
   tabBtns.forEach((btn) => btn.classList.toggle('active', btn.dataset.tab === name));
 }
 
@@ -191,7 +325,7 @@ function readAsArrayBuffer(file) {
 }
 
 async function extractPdfText(file) {
-  if (typeof pdfjsLib === 'undefined') throw new Error('PDF.js non disponibile');
+  if (typeof pdfjsLib === 'undefined') throw new Error(t('pdf.unavailable'));
   const buf = await readAsArrayBuffer(file);
   const pdf = await pdfjsLib.getDocument({ data: buf }).promise;
   const pages = [];
@@ -243,7 +377,7 @@ fileInput.addEventListener('change', async () => {
   fileInput.value = '';
   for (const file of files) {
     try { attachedFiles.push(await processFile(file)); }
-    catch (err) { showErrorInPanel(getFirstActivePanel(), `Errore lettura "${file.name}": ${err.message}`); }
+    catch (err) { showErrorInPanel(getFirstActivePanel(), t('file.read_error', { name: file.name, msg: err.message })); }
   }
   renderAttachmentsPreview();
 });
@@ -295,7 +429,7 @@ function renderConsoleEl(idx) {
   if (logs.length === 0) {
     const empty = document.createElement('div');
     empty.className = 'console-empty';
-    empty.textContent = 'Nessuna attività registrata.';
+    empty.textContent = t('console.empty');
     el.appendChild(empty);
     return;
   }
@@ -332,6 +466,7 @@ function applyLayout() {
   );
 
   renderChatPanels();
+  applyBroadcastMode();
 }
 
 function renderChatPanels() {
@@ -343,6 +478,48 @@ function renderChatPanels() {
     state.messagesEl  = panelEl.querySelector('.messages');
     state.consoleEl   = panelEl.querySelector('.console-drawer');
     state.consoleBtnEl = panelEl.querySelector('.console-toggle-btn');
+
+    // Per-panel input wiring
+    state.tokenCountEl   = panelEl.querySelector('.token-counter');
+    state.inputEl        = panelEl.querySelector('.panel-textarea');
+    state.attachPreviewEl = panelEl.querySelector('.panel-attach-preview');
+    state.stopBtnEl      = panelEl.querySelector('.panel-stop-btn');
+    state.sendBtnEl      = panelEl.querySelector('.panel-send-btn');
+
+    const pFileInput = panelEl.querySelector('.panel-file-input');
+    panelEl.querySelector('.panel-attach-btn').addEventListener('click', () => pFileInput.click());
+    pFileInput.addEventListener('change', async () => {
+      const files = Array.from(pFileInput.files || []);
+      pFileInput.value = '';
+      for (const f of files) {
+        try { panelStates[i].attachedFiles.push(await processFile(f)); }
+        catch (err) { showErrorInPanel(panelStates[i].messagesEl, t('file.read_error', { name: f.name, msg: err.message })); }
+      }
+      renderPanelAttachmentsPreview(i);
+    });
+    state.sendBtnEl.addEventListener('click', () => sendFromPanel(i));
+    state.stopBtnEl.addEventListener('click', () => { panelStates[i].abortController?.abort(); });
+    state.inputEl.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendFromPanel(i); return; }
+      if (e.key === 'ArrowUp' && state.inputEl.selectionStart === 0 && promptHistory.length > 0) {
+        e.preventDefault();
+        if (state.historyCursor === -1) { state.promptDraft = state.inputEl.value; state.historyCursor = promptHistory.length - 1; }
+        else state.historyCursor = Math.max(0, state.historyCursor - 1);
+        state.inputEl.value = promptHistory[state.historyCursor];
+        state.inputEl.dispatchEvent(new Event('input'));
+        return;
+      }
+      if (e.key === 'ArrowDown' && state.historyCursor !== -1) {
+        e.preventDefault();
+        if (state.historyCursor < promptHistory.length - 1) { state.historyCursor++; state.inputEl.value = promptHistory[state.historyCursor]; }
+        else { state.historyCursor = -1; state.inputEl.value = state.promptDraft; }
+        state.inputEl.dispatchEvent(new Event('input'));
+      }
+    });
+    state.inputEl.addEventListener('input', () => {
+      state.inputEl.style.height = 'auto';
+      state.inputEl.style.height = Math.min(state.inputEl.scrollHeight, 96) + 'px';
+    });
 
     // Restore console visibility
     if (state.showConsole) {
@@ -365,13 +542,18 @@ function renderChatPanels() {
     panelStates[i].messagesEl = null;
     panelStates[i].consoleEl = null;
     panelStates[i].consoleBtnEl = null;
+    panelStates[i].inputEl = null;
+    panelStates[i].attachPreviewEl = null;
+    panelStates[i].stopBtnEl = null;
+    panelStates[i].sendBtnEl = null;
+    panelStates[i].tokenCountEl = null;
   }
 }
 
 function buildPanelEl(idx) {
   const epId = layout.slots[idx];
   const ep = endpoints.find((e) => e.id === epId);
-  const name = ep ? ep.name : '— Nessun endpoint —';
+  const name = ep ? ep.name : t('panel.no_endpoint');
 
   const div = document.createElement('div');
   div.className = 'chat-panel';
@@ -380,15 +562,16 @@ function buildPanelEl(idx) {
   header.className = 'flex items-center gap-2 px-3 py-1.5 border-b border-slate-700 bg-slate-800 flex-shrink-0';
   header.innerHTML = `
     <span class="text-xs font-semibold truncate flex-1 ${ep ? 'text-indigo-300' : 'text-slate-500'}">${escapeHtml(name)}</span>
-    <button class="console-toggle-btn font-mono text-slate-500 hover:text-emerald-400 transition-colors text-xs px-1 leading-none" title="Console HTTP">&gt;_</button>
+    <span class="token-counter text-xs font-mono text-slate-600" title="Token stimati nella cronologia"></span>
+    <button class="console-toggle-btn font-mono text-slate-500 hover:text-emerald-400 transition-colors text-xs px-1 leading-none" title="${t('panel.console.title')}">&gt;_</button>
     <details class="export-details relative">
-      <summary class="text-slate-500 hover:text-slate-300 transition-colors text-xs px-1 leading-none cursor-pointer" title="Esporta chat">⬇</summary>
+      <summary class="text-slate-500 hover:text-slate-300 transition-colors text-xs px-1 leading-none cursor-pointer" title="${t('panel.export.title')}">⬇</summary>
       <div class="export-menu absolute right-0 top-5 z-20 bg-slate-700 border border-slate-600 rounded-lg shadow-xl py-1 min-w-[90px]">
-        <button class="export-md-btn block w-full text-left px-3 py-1.5 text-xs text-slate-300 hover:bg-slate-600 transition-colors">Markdown</button>
-        <button class="export-json-btn block w-full text-left px-3 py-1.5 text-xs text-slate-300 hover:bg-slate-600 transition-colors">JSON</button>
+        <button class="export-md-btn block w-full text-left px-3 py-1.5 text-xs text-slate-300 hover:bg-slate-600 transition-colors">${t('panel.export.md')}</button>
+        <button class="export-json-btn block w-full text-left px-3 py-1.5 text-xs text-slate-300 hover:bg-slate-600 transition-colors">${t('panel.export.json')}</button>
       </div>
     </details>
-    <button class="clear-panel-btn text-slate-500 hover:text-slate-300 transition-colors text-sm" title="Pulisci pannello">↺</button>
+    <button class="clear-panel-btn text-slate-500 hover:text-slate-300 transition-colors text-sm" title="${t('panel.clear.title')}">↺</button>
   `;
   header.querySelector('.clear-panel-btn').addEventListener('click', () => clearPanel(idx));
   header.querySelector('.console-toggle-btn').addEventListener('click', () => toggleConsole(idx));
@@ -406,9 +589,25 @@ function buildPanelEl(idx) {
   const consoleDrw = document.createElement('div');
   consoleDrw.className = 'console-drawer hidden';
 
+  const panelFooter = document.createElement('div');
+  panelFooter.className = 'panel-input-footer flex-shrink-0 border-t border-slate-700 bg-slate-800';
+  if (layout.broadcastMode) panelFooter.classList.add('hidden');
+  panelFooter.innerHTML = `
+    <div class="panel-attach-preview hidden flex-wrap gap-1 px-2 pt-1.5"></div>
+    <div class="flex gap-1.5 items-end p-2">
+      <input type="file" multiple class="panel-file-input hidden"
+        accept=".txt,.md,.json,.csv,.xml,.yaml,.yml,.html,.js,.ts,.py,.java,.c,.cpp,.go,.rs,.pdf,image/*" />
+      <button class="panel-attach-btn flex-shrink-0 bg-slate-700 hover:bg-slate-600 text-slate-300 px-2 py-1.5 rounded-lg text-sm transition-colors h-8" title="${t('input.attach.title')}">📎</button>
+      <textarea rows="1" class="panel-textarea flex-1 resize-none bg-slate-700 text-slate-100 placeholder-slate-400 rounded-lg px-2 py-1.5 text-sm focus:outline-none focus:ring-1 focus:ring-indigo-500 max-h-24 min-h-[2rem]" placeholder="${t('panel.input.placeholder')}"></textarea>
+      <button class="panel-send-btn flex-shrink-0 bg-indigo-600 hover:bg-indigo-500 text-white px-2.5 py-1.5 rounded-lg text-sm font-medium transition-colors h-8" title="${t('input.send')}">➤</button>
+      <button class="panel-stop-btn hidden flex-shrink-0 bg-red-700 hover:bg-red-600 text-white px-2.5 py-1.5 rounded-lg text-sm font-medium transition-colors h-8" title="${t('input.stop')}">⏹</button>
+    </div>
+  `;
+
   div.appendChild(header);
   div.appendChild(messages);
   div.appendChild(consoleDrw);
+  div.appendChild(panelFooter);
   return div;
 }
 
@@ -420,7 +619,7 @@ function renderEndpointList() {
   dragSrcIdx = null;
   endpointListEl.innerHTML = '';
   if (endpoints.length === 0) {
-    endpointListEl.innerHTML = '<p class="text-slate-500 text-sm">Nessun endpoint configurato.</p>';
+    endpointListEl.innerHTML = `<p class="text-slate-500 text-sm">${t('endpoint.empty')}</p>`;
     return;
   }
   endpoints.forEach((ep, idx) => {
@@ -428,14 +627,14 @@ function renderEndpointList() {
     div.className = 'ep-item flex items-center gap-3 px-4 py-3 bg-slate-800 rounded-lg border border-slate-700';
     div.draggable = true;
     div.innerHTML = `
-      <span class="drag-handle select-none" title="Trascina per riordinare">⠿</span>
+      <span class="drag-handle select-none" title="${t('endpoint.drag.hint')}">⠿</span>
       <div class="flex-1 min-w-0">
         <div class="text-sm font-medium text-slate-200 truncate">${escapeHtml(ep.name)}</div>
         <div class="text-xs text-slate-500 truncate">${escapeHtml(ep.serverUrl)}${ep.model ? ' · ' + escapeHtml(ep.model) : ''}</div>
       </div>
-      <button class="edit-btn text-xs text-slate-400 hover:text-indigo-400 px-2 py-1 rounded hover:bg-slate-700 transition-colors">Modifica</button>
-      <button class="clone-btn text-xs text-slate-400 hover:text-emerald-400 px-2 py-1 rounded hover:bg-slate-700 transition-colors" title="Clona endpoint">⎘</button>
-      <button class="del-btn text-xs text-slate-400 hover:text-red-400 px-2 py-1 rounded hover:bg-slate-700 transition-colors">Elimina</button>
+      <button class="edit-btn text-xs text-slate-400 hover:text-indigo-400 px-2 py-1 rounded hover:bg-slate-700 transition-colors">${t('endpoint.edit')}</button>
+      <button class="clone-btn text-xs text-slate-400 hover:text-emerald-400 px-2 py-1 rounded hover:bg-slate-700 transition-colors" title="${t('endpoint.clone')}">⎘</button>
+      <button class="del-btn text-xs text-slate-400 hover:text-red-400 px-2 py-1 rounded hover:bg-slate-700 transition-colors">${t('endpoint.delete')}</button>
     `;
 
     div.addEventListener('dragstart', (e) => {
@@ -474,7 +673,7 @@ function renderEndpointList() {
 
 function renderSlotSelectors() {
   slotSelectors.forEach((sel, i) => {
-    sel.innerHTML = '<option value="">— Nessuno —</option>';
+    sel.innerHTML = `<option value="">${t('slot.none')}</option>`;
     endpoints.forEach((ep) => {
       const opt = document.createElement('option');
       opt.value = ep.id;
@@ -508,10 +707,13 @@ function importConfig(file) {
   reader.onload = () => {
     try {
       const parsed = JSON.parse(reader.result);
-      if (!Array.isArray(parsed.endpoints)) throw new Error('Formato non valido');
-      if (!confirm(`Importare ${parsed.endpoints.length} endpoint? La configurazione attuale verrà sostituita.`)) return;
+      if (!Array.isArray(parsed.endpoints)) throw new Error(t('import.invalid'));
+      if (!confirm(t('import.confirm', { count: parsed.endpoints.length }))) return;
       endpoints = parsed.endpoints;
-      layout = parsed.layout || { count: 1, slots: [null, null, null, null] };
+      layout = parsed.layout || {};
+      if (typeof layout.count !== 'number') layout.count = 1;
+      if (!Array.isArray(layout.slots)) layout.slots = [null, null, null, null];
+      if (layout.broadcastMode === undefined) layout.broadcastMode = false;
       while (layout.slots.length < 4) layout.slots.push(null);
       const ids = new Set(endpoints.map((e) => e.id));
       layout.slots = layout.slots.map((s) => (s && ids.has(s) ? s : null));
@@ -520,7 +722,7 @@ function importConfig(file) {
       renderSlotSelectors();
       applyLayout();
     } catch (err) {
-      alert('Errore importazione: ' + err.message);
+      alert(t('import.error', { msg: err.message }));
     }
   };
   reader.readAsText(file);
@@ -532,7 +734,7 @@ function importConfig(file) {
 
 function openEditor(id = null) {
   editingEndpointId = id;
-  editorTitle.textContent = id ? 'Modifica Endpoint' : 'Nuovo Endpoint';
+  editorTitle.textContent = id ? t('editor.edit') : t('editor.new');
   const ep = (id ? endpoints.find((e) => e.id === id) : null) || makeEndpoint();
   fName.value = ep.name;
   fServerUrl.value = ep.serverUrl;
@@ -559,7 +761,7 @@ function closeEditor() {
 function saveEndpoint() {
   const ep = {
     id: editingEndpointId || crypto.randomUUID(),
-    name: fName.value.trim() || 'Endpoint',
+    name: fName.value.trim() || t('editor.default_name'),
     serverUrl: fServerUrl.value.trim() || 'http://127.0.0.1:8080',
     useRawUrl: fRawUrl.checked,
     model: fModel.value.trim(),
@@ -588,6 +790,148 @@ function saveEndpoint() {
   applyLayout();
 }
 
+// ============================================================
+// Font preference
+// ============================================================
+
+function applyFont() {
+  const key = prefs.fontFamily;
+  document.getElementById('gf-link')?.remove();
+
+  let css;
+  if (key === 'custom') {
+    const name = (prefs.googleFont || '').trim();
+    if (name) {
+      const link = Object.assign(document.createElement('link'), {
+        id: 'gf-link', rel: 'stylesheet',
+        href: `https://fonts.googleapis.com/css2?family=${name.replace(/ /g, '+')}:wght@400;500&display=swap`,
+      });
+      document.head.appendChild(link);
+      css = `"${name}", sans-serif`;
+    } else {
+      css = FONTS.system.css;
+    }
+  } else {
+    const def = FONTS[key] || FONTS.system;
+    if (def.gf) {
+      const link = Object.assign(document.createElement('link'), {
+        id: 'gf-link', rel: 'stylesheet',
+        href: `https://fonts.googleapis.com/css2?family=${def.gf}:wght@400;500&display=swap`,
+      });
+      document.head.appendChild(link);
+    }
+    css = def.css;
+  }
+
+  document.documentElement.style.setProperty('--chat-font', css);
+  if (prefFontPreview) prefFontPreview.style.fontFamily = css;
+}
+
+function syncFontUI() {
+  const isKnown = Object.prototype.hasOwnProperty.call(FONTS, prefs.fontFamily);
+  prefFontSelect.value = isKnown ? prefs.fontFamily : 'custom';
+  const isCustom = prefFontSelect.value === 'custom';
+  prefFontCustom.classList.toggle('hidden', !isCustom);
+  if (isCustom) prefFontCustom.value = prefs.googleFont || '';
+}
+
+let _fontTimer = null;
+prefFontSelect.addEventListener('change', () => {
+  prefs.fontFamily = prefFontSelect.value;
+  const isCustom = prefs.fontFamily === 'custom';
+  prefFontCustom.classList.toggle('hidden', !isCustom);
+  if (!isCustom) { applyFont(); saveState(); }
+});
+prefFontCustom.addEventListener('input', () => {
+  clearTimeout(_fontTimer);
+  _fontTimer = setTimeout(() => {
+    prefs.googleFont = prefFontCustom.value.trim();
+    applyFont();
+    saveState();
+  }, 600);
+});
+
+// ============================================================
+// Broadcast mode toggle
+// ============================================================
+
+function applyBroadcastMode() {
+  const isBroadcast = layout.broadcastMode;
+  globalInputBar.classList.toggle('hidden', !isBroadcast);
+  document.querySelectorAll('.panel-input-footer').forEach((el) =>
+    el.classList.toggle('hidden', isBroadcast)
+  );
+  broadcastToggleBtn.textContent = isBroadcast ? t('broadcast.on') : t('broadcast.off');
+  broadcastToggleBtn.title = isBroadcast ? t('broadcast.on.title') : t('broadcast.off.title');
+}
+
+// ============================================================
+// Per-panel attachment preview
+// ============================================================
+
+function renderPanelAttachmentsPreview(idx) {
+  const state = panelStates[idx];
+  const el = state.attachPreviewEl;
+  if (!el) return;
+  el.innerHTML = '';
+  if (state.attachedFiles.length === 0) { el.classList.add('hidden'); return; }
+  el.classList.remove('hidden');
+  state.attachedFiles.forEach((att, i) => {
+    const item = document.createElement('div');
+    item.className = 'attachment-item';
+    if (att.kind === 'image') {
+      const img = document.createElement('img');
+      img.src = att.dataUrl; img.className = 'attachment-thumb'; img.title = att.name;
+      item.appendChild(img);
+    } else {
+      const label = document.createElement('span');
+      label.className = 'attachment-label';
+      label.textContent = (att.kind === 'pdf' ? '📄 ' : '📝 ') + att.name;
+      item.appendChild(label);
+    }
+    const rm = document.createElement('button');
+    rm.className = 'attachment-remove'; rm.textContent = '✕';
+    rm.addEventListener('click', () => { state.attachedFiles.splice(i, 1); renderPanelAttachmentsPreview(idx); });
+    item.appendChild(rm);
+    el.appendChild(item);
+  });
+}
+
+// ============================================================
+// Per-panel send
+// ============================================================
+
+async function sendFromPanel(idx) {
+  const state = panelStates[idx];
+  if (state.isStreaming || !state.inputEl) return;
+  const text = state.inputEl.value.trim();
+  const attachments = [...state.attachedFiles];
+  if (!text && attachments.length === 0) return;
+
+  const ep = endpoints.find((e) => e.id === layout.slots[idx]);
+  if (!ep || !state.messagesEl) return;
+
+  if (text) { promptHistory.push(text); state.historyCursor = -1; state.promptDraft = ''; }
+  appendUserMessageToEl(state.messagesEl, text, attachments);
+  state.inputEl.value = '';
+  state.inputEl.style.height = 'auto';
+  state.attachedFiles = [];
+  renderPanelAttachmentsPreview(idx);
+
+  state.abortController = new AbortController();
+  state.isStreaming = true;
+  state.stopBtnEl?.classList.remove('hidden');
+  state.sendBtnEl?.classList.add('hidden');
+
+  await streamToPanel(idx, ep, text, attachments, state.abortController.signal);
+
+  state.isStreaming = false;
+  state.abortController = null;
+  state.stopBtnEl?.classList.add('hidden');
+  state.sendBtnEl?.classList.remove('hidden');
+  state.inputEl.focus();
+}
+
 function cloneEndpoint(id) {
   const src = endpoints.find((e) => e.id === id);
   if (!src) return;
@@ -600,7 +944,7 @@ function cloneEndpoint(id) {
 }
 
 function deleteEndpoint(id) {
-  if (!confirm('Eliminare questo endpoint?')) return;
+  if (!confirm(t('endpoint.delete.confirm'))) return;
   endpoints = endpoints.filter((e) => e.id !== id);
   layout.slots = layout.slots.map((s) => (s === id ? null : s));
   saveState();
@@ -704,11 +1048,72 @@ function showErrorInPanel(messagesEl, message) {
 // Clear panel
 // ============================================================
 
+function updateTokenCounter(idx) {
+  const state = panelStates[idx];
+  if (!state.tokenCountEl) return;
+  const total = state.history.reduce((sum, m) => {
+    const t = typeof m.content === 'string' ? m.content : JSON.stringify(m.content);
+    return sum + Math.ceil(t.length / 4);
+  }, 0);
+  state.tokenCountEl.textContent = total === 0 ? '' : total >= 1000
+    ? `~${(total / 1000).toFixed(1)}K ${t('token.unit')}`
+    : `~${total} ${t('token.unit')}`;
+}
+
 function clearPanel(idx) {
-  panelStates[idx].history = [];
-  panelStates[idx].logs = [];
-  if (panelStates[idx].messagesEl) panelStates[idx].messagesEl.innerHTML = '';
+  const state = panelStates[idx];
+  state.history = [];
+  state.logs = [];
+  state.lastUserMsg = null;
+  state.lastAssistantWrapper = null;
+  state.lastRegenRow = null;
+  if (state.messagesEl) state.messagesEl.innerHTML = '';
   renderConsoleEl(idx);
+  updateTokenCounter(idx);
+}
+
+async function regeneratePanel(idx) {
+  const state = panelStates[idx];
+  if (state.isStreaming || !state.lastUserMsg) return;
+  const ep = endpoints.find((e) => e.id === layout.slots[idx]);
+  if (!ep || !state.messagesEl) return;
+
+  // Remove last exchange from history
+  if (state.history.length >= 2 &&
+      state.history.at(-1).role === 'assistant' &&
+      state.history.at(-2).role === 'user') {
+    state.history.splice(-2, 2);
+  }
+  state.lastAssistantWrapper?.remove();
+  state.lastRegenRow?.remove();
+  state.lastAssistantWrapper = null;
+  state.lastRegenRow = null;
+
+  const { text, attachments } = state.lastUserMsg;
+
+  state.abortController = new AbortController();
+  state.isStreaming = true;
+  if (layout.broadcastMode) {
+    activeAbortControllers = [state.abortController];
+    sendBtn.classList.add('hidden');
+    stopBtn.classList.remove('hidden');
+  } else {
+    state.stopBtnEl?.classList.remove('hidden');
+    state.sendBtnEl?.classList.add('hidden');
+  }
+
+  await streamToPanel(idx, ep, text, attachments, state.abortController.signal);
+
+  state.isStreaming = false;
+  state.abortController = null;
+  if (layout.broadcastMode) {
+    activeAbortControllers = [];
+    sendBtn.classList.remove('hidden');
+    stopBtn.classList.add('hidden');
+  } else {
+    state.stopBtnEl?.classList.add('hidden');
+    state.sendBtnEl?.classList.remove('hidden');
+  }
 }
 
 // ============================================================
@@ -739,10 +1144,10 @@ function exportPanel(idx, format) {
     filename = `chat_${safeName}_${stamp}.json`;
     mime = 'application/json';
   } else {
-    const dateStr = new Date().toLocaleString('it-IT');
-    const lines = [`# Chat — ${epName}`, `*Esportata il ${dateStr}*`, '', '---', ''];
+    const dateStr = new Date().toLocaleString(prefs.lang === 'en' ? 'en-GB' : 'it-IT');
+    const lines = [`# ${t('export.md.title', { name: epName })}`, `*${t('export.md.date', { date: dateStr })}*`, '', '---', ''];
     state.history.forEach((msg) => {
-      lines.push(`**${msg.role === 'user' ? 'Utente' : 'Assistente'}**`, '', msg.content, '', '---', '');
+      lines.push(`**${msg.role === 'user' ? t('export.role.user') : t('export.role.assistant')}**`, '', msg.content, '', '---', '');
     });
     content = lines.join('\n');
     filename = `chat_${safeName}_${stamp}.md`;
@@ -830,7 +1235,7 @@ async function streamToPanel(panelIdx, endpoint, userText, attachments, signal =
     } catch (netErr) {
       if (netErr.name === 'AbortError') throw netErr;
       logToPanel(panelIdx, 'error', `✗ Rete: ${netErr.name} — ${netErr.message}`);
-      logToPanel(panelIdx, 'warn', '  ⚠ Backend non raggiungibile — avvia il server con uvicorn');
+      logToPanel(panelIdx, 'warn', `  ${t('error.backend_unreachable')}`);
       netErr._logged = true;
       throw netErr;
     }
@@ -892,12 +1297,27 @@ async function streamToPanel(panelIdx, endpoint, userText, attachments, signal =
     state.history.push({ role: 'user', content: textContent, displayText: userText, displayAttachments: attachments });
     state.history.push({ role: 'assistant', content: assistantText, displayText: assistantText, displayAttachments: [] });
 
+    // Rigenera button
+    state.lastUserMsg = { text: userText, attachments };
+    state.lastAssistantWrapper = wrapper;
+    const regenRow = document.createElement('div');
+    regenRow.className = 'regen-row';
+    const regenBtn = document.createElement('button');
+    regenBtn.className = 'regen-btn';
+    regenBtn.textContent = t('regen.btn');
+    regenBtn.addEventListener('click', () => regeneratePanel(panelIdx));
+    regenRow.appendChild(regenBtn);
+    wrapper.insertAdjacentElement('afterend', regenRow);
+    state.lastRegenRow = regenRow;
+
+    updateTokenCounter(panelIdx);
+
   } catch (err) {
     if (err.name === 'AbortError') {
-      logToPanel(panelIdx, 'warn', '⏹ Generazione interrotta');
+      logToPanel(panelIdx, 'warn', t('stream.interrupted'));
       if (assistantText) {
         bubble.innerHTML = parseMarkdown(assistantText) +
-          '<span class="text-amber-500 text-xs block mt-1">⏹ interrotto</span>';
+          `<span class="text-amber-500 text-xs block mt-1">${t('stream.interrupted')}</span>`;
         const textContent = buildTextContent(userText, attachments);
         state.history.push({ role: 'user', content: textContent, displayText: userText, displayAttachments: attachments });
         state.history.push({ role: 'assistant', content: assistantText, displayText: assistantText, displayAttachments: [] });
@@ -908,7 +1328,7 @@ async function streamToPanel(panelIdx, endpoint, userText, attachments, signal =
       setStatus('err');
       bubble.innerHTML = '';
       if (!assistantText) wrapper.remove();
-      showErrorInPanel(messagesEl, err.message || 'Errore di connessione.');
+      showErrorInPanel(messagesEl, err.message || t('error.connection'));
       if (!err._logged && !err.message?.startsWith('HTTP ')) {
         logToPanel(panelIdx, 'error', `✗ ${err.message}`);
       }
@@ -925,6 +1345,7 @@ function isAnyStreaming() {
 }
 
 async function sendMessage() {
+  if (!layout.broadcastMode) return;
   const text = userInput.value.trim();
   if ((!text && attachedFiles.length === 0) || isAnyStreaming()) return;
 
@@ -944,6 +1365,7 @@ async function sendMessage() {
     panelStates[idx].isStreaming = true;
   });
 
+  if (text) { promptHistory.push(text); bcastHistoryCursor = -1; bcastPromptDraft = ''; }
   userInput.value = '';
   userInput.style.height = 'auto';
   attachedFiles = [];
@@ -975,7 +1397,21 @@ sendBtn.addEventListener('click', sendMessage);
 stopBtn.addEventListener('click', () => activeAbortControllers.forEach((c) => c.abort()));
 
 userInput.addEventListener('keydown', (e) => {
-  if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendMessage(); }
+  if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendMessage(); return; }
+  if (e.key === 'ArrowUp' && userInput.selectionStart === 0 && promptHistory.length > 0) {
+    e.preventDefault();
+    if (bcastHistoryCursor === -1) { bcastPromptDraft = userInput.value; bcastHistoryCursor = promptHistory.length - 1; }
+    else bcastHistoryCursor = Math.max(0, bcastHistoryCursor - 1);
+    userInput.value = promptHistory[bcastHistoryCursor];
+    userInput.dispatchEvent(new Event('input'));
+    return;
+  }
+  if (e.key === 'ArrowDown' && bcastHistoryCursor !== -1) {
+    e.preventDefault();
+    if (bcastHistoryCursor < promptHistory.length - 1) { bcastHistoryCursor++; userInput.value = promptHistory[bcastHistoryCursor]; }
+    else { bcastHistoryCursor = -1; userInput.value = bcastPromptDraft; }
+    userInput.dispatchEvent(new Event('input'));
+  }
 });
 
 userInput.addEventListener('input', () => {
@@ -997,8 +1433,28 @@ configImportInput.addEventListener('change', () => {
   configImportInput.value = '';
   if (file) importConfig(file);
 });
+broadcastToggleBtn.addEventListener('click', () => {
+  layout.broadcastMode = !layout.broadcastMode;
+  saveState();
+  applyBroadcastMode();
+});
+
 editorCancelBtn.addEventListener('click', closeEditor);
 editorSaveBtn.addEventListener('click', saveEndpoint);
+
+if (prefLangSelect) {
+  prefLangSelect.addEventListener('change', async () => {
+    prefs.lang = prefLangSelect.value;
+    await loadTranslations(prefs.lang);
+    applyTranslations();
+    renderEndpointList();
+    renderSlotSelectors();
+    applyLayout();
+    _guideLoaded = false;
+    if (!panelGuidaEl.classList.contains('hidden')) loadGuide();
+    saveState();
+  });
+}
 
 Object.entries(editorSliders).forEach(([key, { slider, val }]) => {
   slider.addEventListener('input', () => {
@@ -1018,6 +1474,11 @@ fToggleApiKey.addEventListener('click', () => {
 
 (async () => {
   await loadState();
+  await loadTranslations(prefs.lang);
+  applyFont();
+  syncFontUI();
+  syncLangUI();
+  applyTranslations();
   renderEndpointList();
   renderSlotSelectors();
   applyLayout();

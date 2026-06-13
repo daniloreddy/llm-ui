@@ -55,8 +55,11 @@ app = FastAPI(
 @app.middleware("http")
 async def _limit_body(request: Request, call_next: Any) -> Any:
     content_length = request.headers.get("content-length")
-    if content_length and int(content_length) > _MAX_BODY:
-        return JSONResponse(status_code=413, content={"detail": "Payload too large"})
+    try:
+        if content_length and int(content_length) > _MAX_BODY:
+            return JSONResponse(status_code=413, content={"detail": "Payload too large"})
+    except ValueError:
+        return JSONResponse(status_code=400, content={"detail": "Invalid Content-Length"})
     return await call_next(request)
 
 
@@ -79,7 +82,10 @@ async def put_config(request: Request) -> dict[str, bool]:
 
 @app.post("/api/chat")
 async def chat(request: Request) -> StreamingResponse:
-    body = await request.json()
+    try:
+        body = await request.json()
+    except Exception:
+        raise HTTPException(status_code=400, detail="Invalid JSON")
     cfg = await _config.get()
 
     endpoint_id: str | None = body.get("endpointId")

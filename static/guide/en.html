@@ -1,0 +1,68 @@
+<h1>User Guide</h1>
+<p>LLM UI is a web interface for chatting with local or remote language models compatible with the OpenAI API.</p>
+
+<h2>Configuring an endpoint</h2>
+<p>Go to <strong>Config → + Add</strong> to create a new endpoint. Available fields:</p>
+<table>
+  <tr><th>Field</th><th>Description</th></tr>
+  <tr><td>Name</td><td>Label displayed in the panel header</td></tr>
+  <tr><td>Server URL</td><td>Base URL of the LLM server (e.g. <code>http://127.0.0.1:8080</code>)</td></tr>
+  <tr><td>Full URL</td><td>Check if the URL already points to the exact endpoint (e.g. Cloudflare AI Gateway)</td></tr>
+  <tr><td>Model</td><td>Model identifier (e.g. <code>gpt-4o</code>). Leave blank to use the server default</td></tr>
+  <tr><td>API Key</td><td>Bearer authentication token (optional)</td></tr>
+  <tr><td>System Prompt</td><td>System instruction prepended to every conversation</td></tr>
+  <tr><td>Temperature</td><td>Response randomness (0 = deterministic, 2 = very creative)</td></tr>
+  <tr><td>Top-P</td><td>Nucleus sampling — filters out less probable tokens</td></tr>
+  <tr><td>Max Tokens</td><td>Maximum response length. 0 = no limit</td></tr>
+  <tr><td>Repeat Penalty</td><td>Penalty for repetitions in the generated text</td></tr>
+</table>
+<p>Use <strong>⎘</strong> to clone an endpoint (copies all fields including the API key) and <strong>⠿</strong> to reorder it by dragging.</p>
+
+<h2>Panel layout</h2>
+<p>The <em>Panel layout</em> section in Config lets you display up to 4 endpoints side by side. Choose the number of panels (1–4) and assign an endpoint to each using the dropdown menus. The 3-panel layout shows one large panel on the left and two smaller ones on the right.</p>
+
+<h2>Input mode</h2>
+<p>The button in the top-right corner of the navigation bar controls how input works:</p>
+<ul>
+  <li><strong>⇥ Per panel</strong> (default) — each panel has its own text box. You can ask different questions to each model at the same time.</li>
+  <li><strong>⇉ Broadcast</strong> — a single input field at the bottom sends the same message to all active panels in parallel. Useful for comparing different models' responses to the same question.</li>
+</ul>
+<p>The choice is saved automatically.</p>
+
+<h2>Sending messages</h2>
+<ul>
+  <li><kbd>Enter</kbd> — send the message</li>
+  <li><kbd>Shift + Enter</kbd> — new line without sending</li>
+  <li><strong>➤</strong> button — send with the mouse</li>
+</ul>
+
+<h2>Attachments</h2>
+<p>Click <strong>📎</strong> to attach files. Supported types:</p>
+<ul>
+  <li><strong>Text</strong> (.txt, .md, .json, .py, .js, etc.) — content is appended to the message</li>
+  <li><strong>PDF</strong> — text is extracted in the browser and attached to the message</li>
+  <li><strong>Images</strong> — sent as multimodal messages (requires a vision model)</li>
+</ul>
+<p>In <em>per-panel</em> mode, each panel manages its own attachments independently.</p>
+
+<h2>Stopping generation</h2>
+<p>Click <strong>⏹</strong> during streaming to stop generation. Text already received is kept in the chat and history.</p>
+
+<h2>Clearing the chat</h2>
+<ul>
+  <li><strong>↺</strong> in the panel header — clears the history of that single panel</li>
+  <li><strong>↺</strong> in the bottom bar (broadcast mode) — clears all panels</li>
+</ul>
+
+<h2>Exporting the chat</h2>
+<p>Click <strong>⬇</strong> in the panel header and choose the format:</p>
+<ul>
+  <li><strong>Markdown</strong> — <code>.md</code> file readable with any editor</li>
+  <li><strong>JSON</strong> — full structure with endpoint metadata, useful for further processing</li>
+</ul>
+
+<h2>HTTP Console</h2>
+<p>Click <strong>&gt;_</strong> in the panel header to open the log drawer. It shows details of each request: parameters used, HTTP status received, and the number of stream chunks. Useful for diagnosing connection issues.</p>
+
+<h2>Exporting / importing configuration</h2>
+<p>In <strong>Config → Export</strong> you download a JSON file with all configured endpoints. With <strong>Import</strong> you can restore the configuration on another device or after a reinstall.</p>

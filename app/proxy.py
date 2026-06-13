@@ -47,7 +47,9 @@ async def proxy_stream(
     endpoint: dict[str, Any],
     body: dict[str, Any],
 ) -> AsyncGenerator[bytes, None]:
-    url: str = endpoint["serverUrl"]
+    url: str = endpoint.get("serverUrl", "")
+    if not url:
+        raise HTTPException(status_code=422, detail="Endpoint missing serverUrl")
     if not endpoint.get("useRawUrl"):
         url = url.rstrip("/") + "/v1/chat/completions"
 

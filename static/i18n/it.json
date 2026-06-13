@@ -1,0 +1,94 @@
+{
+  "nav.chat": "Chat",
+  "nav.config": "Config",
+  "nav.guide": "Guida",
+
+  "pref.title": "Preferenze",
+  "pref.font.label": "Font chat",
+  "pref.font.system": "Sistema (default)",
+  "pref.font.custom": "Personalizzato (Google Fonts)…",
+  "pref.font.custom.placeholder": "es. Playfair Display",
+  "pref.font.preview": "Anteprima — il testo delle chat apparirà con questo font.",
+  "pref.lang.label": "Lingua",
+
+  "layout.title": "Layout pannelli",
+  "layout.panel": "Pannello {{n}}",
+
+  "slot.none": "— Nessuno —",
+
+  "endpoint.list.title": "Endpoint configurati",
+  "endpoint.export": "⬇ Esporta",
+  "endpoint.import": "⬆ Importa",
+  "endpoint.add": "+ Aggiungi",
+  "endpoint.empty": "Nessun endpoint configurato.",
+  "endpoint.edit": "Modifica",
+  "endpoint.clone": "Clona endpoint",
+  "endpoint.delete": "Elimina",
+  "endpoint.delete.confirm": "Eliminare questo endpoint?",
+  "endpoint.drag.hint": "Trascina per riordinare",
+
+  "import.confirm": "Importare {{count}} endpoint? La configurazione attuale verrà sostituita.",
+  "import.invalid": "Formato non valido",
+  "import.error": "Errore importazione: {{msg}}",
+
+  "editor.new": "Nuovo Endpoint",
+  "editor.edit": "Modifica Endpoint",
+  "editor.default_name": "Nuovo Endpoint",
+  "editor.name": "Nome",
+  "editor.name.placeholder": "es. llama.cpp local",
+  "editor.url": "Server URL",
+  "editor.rawurl": "URL completo — non aggiungere /v1/chat/completions",
+  "editor.model": "Model",
+  "editor.model.placeholder": "es. gpt-4o (lascia vuoto per default)",
+  "editor.apikey": "API Key (Bearer Token)",
+  "editor.apikey.placeholder": "sk-… (opzionale)",
+  "editor.systemprompt": "System Prompt",
+  "editor.systemprompt.placeholder": "Sei un assistente AI conciso e preciso.",
+  "editor.temperature": "Temperature",
+  "editor.top_p": "Top-P",
+  "editor.max_tokens": "Max Tokens",
+  "editor.repeat_penalty": "Repeat Penalty",
+  "editor.cancel": "Annulla",
+  "editor.save": "Salva",
+
+  "panel.no_endpoint": "— Nessun endpoint —",
+  "panel.console.title": "Console HTTP",
+  "panel.export.title": "Esporta chat",
+  "panel.export.md": "Markdown",
+  "panel.export.json": "JSON",
+  "panel.clear.title": "Pulisci pannello",
+  "panel.input.placeholder": "Scrivi…",
+
+  "console.empty": "Nessuna attività registrata.",
+
+  "input.placeholder": "Scrivi un messaggio…",
+  "input.send": "Invia",
+  "input.stop": "Stop",
+  "input.attach.title": "Allega file",
+  "input.clear_all.title": "Pulisci tutte le chat",
+
+  "broadcast.on": "⇉ Broadcast",
+  "broadcast.off": "⇥ Per pannello",
+  "broadcast.on.title": "Input condiviso — clicca per input indipendente per pannello",
+  "broadcast.off.title": "Input per pannello — clicca per input condiviso (broadcast)",
+
+  "export.role.user": "Utente",
+  "export.role.assistant": "Assistente",
+  "export.md.title": "Chat — {{name}}",
+  "export.md.date": "Esportata il {{date}}",
+
+  "stream.interrupted": "⏹ Generazione interrotta",
+  "error.connection": "Errore di connessione.",
+  "error.backend_unreachable": "⚠ Backend non raggiungibile — avvia il server con uvicorn",
+
+  "file.read_error": "Errore lettura \"{{name}}\": {{msg}}",
+  "pdf.unavailable": "PDF.js non disponibile",
+
+  "token.unit": "tk",
+
+  "think.label": "⚙ Ragionamento",
+  "regen.btn": "↺ Rigenera",
+
+  "guide.loading": "Caricamento…",
+  "guide.error": "Errore caricamento guida: {{msg}}"
+}

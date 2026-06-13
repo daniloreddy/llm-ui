@@ -1,0 +1,68 @@
+<h1>Guida all'uso</h1>
+<p>LLM UI è un'interfaccia web per chattare con modelli linguistici locali o remoti compatibili con l'API OpenAI.</p>
+
+<h2>Configurare un endpoint</h2>
+<p>Vai in <strong>Config → + Aggiungi</strong> per creare un nuovo endpoint. I campi disponibili:</p>
+<table>
+  <tr><th>Campo</th><th>Descrizione</th></tr>
+  <tr><td>Nome</td><td>Etichetta visualizzata nell'intestazione del pannello</td></tr>
+  <tr><td>Server URL</td><td>URL base del server LLM (es. <code>http://127.0.0.1:8080</code>)</td></tr>
+  <tr><td>URL completo</td><td>Spunta se l'URL punta già all'endpoint esatto (es. Cloudflare AI Gateway)</td></tr>
+  <tr><td>Model</td><td>Identificatore del modello (es. <code>gpt-4o</code>). Lascia vuoto per usare il default del server</td></tr>
+  <tr><td>API Key</td><td>Bearer token di autenticazione (opzionale)</td></tr>
+  <tr><td>System Prompt</td><td>Istruzione di sistema preposta ad ogni conversazione</td></tr>
+  <tr><td>Temperature</td><td>Casualità delle risposte (0 = deterministico, 2 = molto creativo)</td></tr>
+  <tr><td>Top-P</td><td>Nucleus sampling — filtra i token meno probabili</td></tr>
+  <tr><td>Max Tokens</td><td>Lunghezza massima della risposta. 0 = nessun limite</td></tr>
+  <tr><td>Repeat Penalty</td><td>Penalità per ripetizioni nel testo generato</td></tr>
+</table>
+<p>Usa <strong>⎘</strong> per clonare un endpoint (copia tutti i campi inclusa la chiave API) e <strong>⠿</strong> per riordinarlo trascinandolo.</p>
+
+<h2>Layout pannelli</h2>
+<p>La sezione <em>Layout pannelli</em> in Config permette di affiancare fino a 4 endpoint contemporaneamente. Scegli il numero di pannelli (1–4) e assegna un endpoint a ciascuno tramite i menu a tendina. Il layout a 3 mostra un pannello grande a sinistra e due più piccoli a destra.</p>
+
+<h2>Modalità input</h2>
+<p>Il pulsante in alto a destra nella barra di navigazione controlla come funziona l'input:</p>
+<ul>
+  <li><strong>⇥ Per pannello</strong> (default) — ogni pannello ha la propria casella di testo. Puoi fare domande diverse a ogni modello nello stesso momento.</li>
+  <li><strong>⇉ Broadcast</strong> — un unico campo in basso invia lo stesso messaggio a tutti i pannelli attivi in parallelo. Utile per confrontare le risposte di modelli diversi alla stessa domanda.</li>
+</ul>
+<p>La scelta viene salvata automaticamente.</p>
+
+<h2>Inviare messaggi</h2>
+<ul>
+  <li><kbd>Invio</kbd> — invia il messaggio</li>
+  <li><kbd>Shift + Invio</kbd> — va a capo senza inviare</li>
+  <li>Pulsante <strong>➤</strong> — invia con il mouse</li>
+</ul>
+
+<h2>Allegati</h2>
+<p>Clicca <strong>📎</strong> per allegare file. Tipi supportati:</p>
+<ul>
+  <li><strong>Testo</strong> (.txt, .md, .json, .py, .js, ecc.) — il contenuto viene aggiunto al messaggio</li>
+  <li><strong>PDF</strong> — il testo viene estratto nel browser e allegato al messaggio</li>
+  <li><strong>Immagini</strong> — inviate come messaggi multimodali (richiede un modello vision)</li>
+</ul>
+<p>In modalità <em>per pannello</em> ogni pannello gestisce i propri allegati in modo indipendente.</p>
+
+<h2>Interrompere la generazione</h2>
+<p>Clicca <strong>⏹</strong> durante lo streaming per interrompere la generazione. Il testo già ricevuto viene mantenuto nella chat e nella cronologia.</p>
+
+<h2>Pulire la chat</h2>
+<ul>
+  <li><strong>↺</strong> nell'intestazione del pannello — cancella la cronologia del singolo pannello</li>
+  <li><strong>↺</strong> nella barra in basso (modalità broadcast) — cancella tutti i pannelli</li>
+</ul>
+
+<h2>Esportare la chat</h2>
+<p>Clicca <strong>⬇</strong> nell'intestazione del pannello e scegli il formato:</p>
+<ul>
+  <li><strong>Markdown</strong> — file <code>.md</code> leggibile con qualsiasi editor</li>
+  <li><strong>JSON</strong> — struttura completa con metadati endpoint, utile per elaborazioni successive</li>
+</ul>
+
+<h2>Console HTTP</h2>
+<p>Clicca <strong>&gt;_</strong> nell'intestazione del pannello per aprire il drawer di log. Mostra i dettagli di ogni richiesta: parametri usati, status HTTP ricevuto e numero di chunk dello stream. Utile per diagnosticare problemi di connessione.</p>
+
+<h2>Esportare / importare la configurazione</h2>
+<p>In <strong>Config → Esporta</strong> scarichi un file JSON con tutti gli endpoint configurati. Con <strong>Importa</strong> puoi ripristinare la configurazione su un altro dispositivo o dopo una reinstallazione.</p>
