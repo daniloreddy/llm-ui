@@ -18,6 +18,13 @@
 </table>
 <p>Usa <strong>⎘</strong> per clonare un endpoint (copia tutti i campi inclusa la chiave API) e <strong>⠿</strong> per riordinarlo trascinandolo.</p>
 
+<h2>Preferenze</h2>
+<p>La sezione <em>Preferenze</em> in <strong>Config</strong> permette di personalizzare l'interfaccia:</p>
+<ul>
+  <li><strong>Font chat</strong> — scegli tra i font di sistema o un Google Font preimpostato (Inter, Roboto, Source Sans 3, Lato, JetBrains Mono). Con <em>Personalizzato</em> puoi digitare il nome di qualsiasi font Google.</li>
+  <li><strong>Lingua</strong> — Italiano o English. Il cambio si applica immediatamente a tutta l'interfaccia e alla guida.</li>
+</ul>
+
 <h2>Layout pannelli</h2>
 <p>La sezione <em>Layout pannelli</em> in Config permette di affiancare fino a 4 endpoint contemporaneamente. Scegli il numero di pannelli (1–4) e assegna un endpoint a ciascuno tramite i menu a tendina. Il layout a 3 mostra un pannello grande a sinistra e due più piccoli a destra.</p>
 
@@ -36,6 +43,9 @@
   <li>Pulsante <strong>➤</strong> — invia con il mouse</li>
 </ul>
 
+<h2>Cronologia dei prompt</h2>
+<p>Nella casella di testo, usa <kbd>↑</kbd> e <kbd>↓</kbd> per navigare i messaggi inviati in precedenza (come nel terminale). La bozza corrente viene ripristinata premendo <kbd>↓</kbd> fino alla fine della cronologia. In modalità broadcast la cronologia è condivisa; in modalità per pannello è indipendente per ciascun pannello.</p>
+
 <h2>Allegati</h2>
 <p>Clicca <strong>📎</strong> per allegare file. Tipi supportati:</p>
 <ul>
@@ -44,6 +54,19 @@
   <li><strong>Immagini</strong> — inviate come messaggi multimodali (richiede un modello vision)</li>
 </ul>
 <p>In modalità <em>per pannello</em> ogni pannello gestisce i propri allegati in modo indipendente.</p>
+
+<h2>Lettura delle risposte</h2>
+<p>Le risposte dell'assistente sono rese in Markdown con evidenziazione della sintassi.</p>
+<ul>
+  <li><strong>Copia codice</strong> — ogni blocco di codice ha un pulsante <strong>⎘</strong> in alto a destra per copiare il contenuto negli appunti.</li>
+  <li><strong>Blocchi di ragionamento</strong> — se il modello emette contenuto in tag <code>&lt;think&gt;</code> o <code>&lt;thinking&gt;</code>, viene mostrato in un accordion <strong>⚙ Ragionamento</strong> collassabile, separato dalla risposta principale.</li>
+</ul>
+
+<h2>Rigenerare una risposta</h2>
+<p>Sotto ogni risposta dell'assistente compare il pulsante <strong>↺ Rigenera</strong>. Cliccalo per rinviare l'ultimo messaggio utente e ottenere una nuova risposta dallo stesso modello, senza riscrivere il prompt. La risposta precedente viene rimossa dalla cronologia.</p>
+
+<h2>Contatore token</h2>
+<p>Accanto alla casella di input compare una stima del numero di token nella cronologia corrente (es. <code>~1.2K tk</code>). È una stima approssimativa (4 caratteri ≈ 1 token) utile per tenere d'occhio la finestra di contesto.</p>
 
 <h2>Interrompere la generazione</h2>
 <p>Clicca <strong>⏹</strong> durante lo streaming per interrompere la generazione. Il testo già ricevuto viene mantenuto nella chat e nella cronologia.</p>

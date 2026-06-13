@@ -10,15 +10,21 @@ Python/FastAPI backend acts as a proxy — no CORS issues, no build step, no fra
 ## Features
 
 - **Multi-endpoint** — configure any number of OpenAI-compatible endpoints (llama.cpp, Cloudflare AI Gateway, OpenRouter, etc.)
-- **Multi-panel layout** — chat with 1–4 endpoints side by side, same prompt broadcast to all
+- **Multi-panel layout** — chat with 1–4 endpoints side by side; per-panel input or broadcast mode
 - **Streaming** — token-by-token SSE streaming with stop-generation support
+- **Regenerate** — resend the last prompt to get a different response
+- **Prompt history** — navigate previously sent messages with ↑/↓ (per panel)
 - **File attachments** — text files, PDFs (client-side extraction via PDF.js), images (multimodal)
-- **Markdown rendering** — assistant responses rendered with syntax highlighting
+- **Markdown rendering** — syntax highlighting via highlight.js; copy-code button on every block
+- **Reasoning blocks** — `<think>`/`<thinking>` content collapsed into an expandable accordion
+- **Token counter** — estimated token count for the current conversation
 - **Per-panel console** — HTTP log drawer showing request/response details
 - **Chat export** — Markdown or JSON per panel
 - **Config export/import** — backup and restore all endpoints as JSON
 - **Drag-and-drop** — reorder endpoints in the list
 - **Clone endpoint** — duplicate an endpoint (including API key) to quickly create model variants
+- **Font selection** — system font or any Google Font (presets + custom name)
+- **i18n** — Italian and English UI; adding a language requires only two new files
 - **Server-side persistence** — config stored in `data/config.json`, survives restarts
 
 ## Requirements
@@ -76,17 +82,31 @@ Endpoints are managed entirely from the UI (Settings tab). Each endpoint stores:
 │   ├── main.py       # FastAPI app, routes, lifespan
 │   ├── config.py     # ConfigManager (async, atomic writes)
 │   └── proxy.py      # LLM streaming proxy
+├── app/
+│   ├── main.py       # FastAPI app, routes, lifespan
+│   ├── config.py     # ConfigManager (async, atomic writes)
+│   └── proxy.py      # LLM streaming proxy
 ├── static/
 │   ├── index.html    # SPA shell
 │   ├── app.js        # All frontend logic
-│   └── style.css     # Styles
+│   ├── style.css     # Custom styles
+│   ├── input.css     # Tailwind v4 entry point
+│   ├── tw.css        # Generated CSS — gitignored
+│   ├── i18n/
+│   │   ├── it.json   # Italian strings
+│   │   └── en.json   # English strings
+│   └── guide/
+│       ├── it.html   # Italian user guide (lazy-loaded)
+│       └── en.html   # English user guide (lazy-loaded)
 ├── tests/
 │   ├── test_clamp.py   # Unit tests — _clamp, _build_payload
 │   ├── test_config.py  # Unit tests — ConfigManager
 │   └── test_api.py     # Integration tests — FastAPI endpoints
 ├── scripts/
-│   ├── run.bat / run.sh      # Start the server
-│   └── check.bat / check.sh  # Ruff + mypy + pytest
+│   ├── run.bat / run.sh                  # Start the server
+│   ├── check.bat / check.sh              # Tailwind + ruff + mypy + pytest
+│   └── setup-tailwind.bat / .sh         # Download Tailwind CLI binary
+├── bin/                      # Tailwind CLI binary — gitignored
 ├── data/                     # Runtime (gitignored): config.json, llm-ui.log
 ├── Dockerfile
 └── docker-compose.yml
@@ -98,10 +118,12 @@ Endpoints are managed entirely from the UI (Settings tab). Each endpoint stores:
 # Install dev deps
 .venv\Scripts\pip install -r requirements.dev.txt
 
-# Lint + type-check + test
+# Generate CSS + lint + type-check + test
 scripts\check.bat        # Windows
 # bash scripts/check.sh  # Linux/macOS
 ```
+
+The check script downloads the Tailwind CLI binary on first run (requires `curl`), then generates `static/tw.css`.
 
 ## License
 

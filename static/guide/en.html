@@ -18,6 +18,13 @@
 </table>
 <p>Use <strong>⎘</strong> to clone an endpoint (copies all fields including the API key) and <strong>⠿</strong> to reorder it by dragging.</p>
 
+<h2>Preferences</h2>
+<p>The <em>Preferences</em> section in <strong>Config</strong> lets you customise the interface:</p>
+<ul>
+  <li><strong>Chat font</strong> — choose from system fonts or a preset Google Font (Inter, Roboto, Source Sans 3, Lato, JetBrains Mono). With <em>Custom</em> you can type any Google Font name.</li>
+  <li><strong>Language</strong> — Italiano or English. The change applies immediately to the entire interface and guide.</li>
+</ul>
+
 <h2>Panel layout</h2>
 <p>The <em>Panel layout</em> section in Config lets you display up to 4 endpoints side by side. Choose the number of panels (1–4) and assign an endpoint to each using the dropdown menus. The 3-panel layout shows one large panel on the left and two smaller ones on the right.</p>
 
@@ -36,6 +43,9 @@
   <li><strong>➤</strong> button — send with the mouse</li>
 </ul>
 
+<h2>Prompt history</h2>
+<p>In the text input, use <kbd>↑</kbd> and <kbd>↓</kbd> to navigate previously sent messages (similar to a terminal). The current draft is restored by pressing <kbd>↓</kbd> past the end of the history. In broadcast mode the history is shared; in per-panel mode it is independent for each panel.</p>
+
 <h2>Attachments</h2>
 <p>Click <strong>📎</strong> to attach files. Supported types:</p>
 <ul>
@@ -44,6 +54,19 @@
   <li><strong>Images</strong> — sent as multimodal messages (requires a vision model)</li>
 </ul>
 <p>In <em>per-panel</em> mode, each panel manages its own attachments independently.</p>
+
+<h2>Reading responses</h2>
+<p>Assistant responses are rendered as Markdown with syntax highlighting.</p>
+<ul>
+  <li><strong>Copy code</strong> — every code block has a <strong>⎘</strong> button in the top-right corner to copy the content to the clipboard.</li>
+  <li><strong>Reasoning blocks</strong> — if the model outputs content wrapped in <code>&lt;think&gt;</code> or <code>&lt;thinking&gt;</code> tags, it is shown in a collapsible <strong>⚙ Reasoning</strong> accordion, separate from the main response.</li>
+</ul>
+
+<h2>Regenerating a response</h2>
+<p>Below each assistant response, a <strong>↺ Regenerate</strong> button appears. Click it to resend the last user message and get a new response from the same model, without retyping the prompt. The previous response is removed from the history.</p>
+
+<h2>Token counter</h2>
+<p>Next to the input box, an estimated token count for the current conversation history is shown (e.g. <code>~1.2K tk</code>). It is an approximation (4 characters ≈ 1 token) useful for monitoring context window usage.</p>
 
 <h2>Stopping generation</h2>
 <p>Click <strong>⏹</strong> during streaming to stop generation. Text already received is kept in the chat and history.</p>
