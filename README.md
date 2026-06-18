@@ -44,12 +44,38 @@ python -m venv .venv
 .venv\Scripts\pip install -r requirements.txt        # Windows
 # .venv/bin/pip install -r requirements.txt          # Linux/macOS
 
-# 3. Run
+# 3. Configure environment
+cp .env.example .env
+# edit .env if needed (defaults work for local / Cloudflare Tunnel)
+
+# 4. Set the login password (once)
+.venv\Scripts\python scripts/set_password.py
+
+# 5. Run
 scripts\run.bat        # Windows
 # bash scripts/run.sh  # Linux/macOS
 ```
 
-Open [http://127.0.0.1:8050](http://127.0.0.1:8050) in your browser.
+Open [http://127.0.0.1:8050](http://127.0.0.1:8050) in your browser and log in.
+
+## Authentication
+
+All routes are protected by a session cookie (JWT, `HttpOnly`, `SameSite=Strict`).  
+Set the password once before first run:
+
+```bash
+python scripts/set_password.py
+```
+
+To expose the app on the internet, use **Cloudflare Tunnel** — no port forwarding, automatic HTTPS:
+
+```bash
+cloudflared tunnel create llm-ui
+cloudflared tunnel route dns llm-ui llm-ui.yourdomain.com
+cloudflared tunnel run --url http://127.0.0.1:8050 llm-ui
+```
+
+See `.env.example` for tunable parameters (`TRUSTED_PROXIES`, `AUTH_SECURE_COOKIE`).
 
 ## Docker
 
@@ -79,15 +105,13 @@ Endpoints are managed entirely from the UI (Settings tab). Each endpoint stores:
 ```
 .
 ├── app/
-│   ├── main.py       # FastAPI app, routes, lifespan
-│   ├── config.py     # ConfigManager (async, atomic writes)
-│   └── proxy.py      # LLM streaming proxy
-├── app/
-│   ├── main.py       # FastAPI app, routes, lifespan
+│   ├── main.py       # FastAPI app, auth middleware + routes, lifespan
+│   ├── auth.py       # AuthManager — password hashing, JWT, rate limiting
 │   ├── config.py     # ConfigManager (async, atomic writes)
 │   └── proxy.py      # LLM streaming proxy
 ├── static/
 │   ├── index.html    # SPA shell
+│   ├── login.html    # Login page (self-contained, inline CSS)
 │   ├── app.js        # All frontend logic
 │   ├── style.css     # Custom styles
 │   ├── input.css     # Tailwind v4 entry point
@@ -105,9 +129,11 @@ Endpoints are managed entirely from the UI (Settings tab). Each endpoint stores:
 ├── scripts/
 │   ├── run.bat / run.sh                  # Start the server
 │   ├── check.bat / check.sh              # Tailwind + ruff + mypy + pytest
-│   └── setup-tailwind.bat / .sh         # Download Tailwind CLI binary
+│   ├── setup-tailwind.bat / .sh         # Download Tailwind CLI binary
+│   └── set_password.py                  # Set the login password
 ├── bin/                      # Tailwind CLI binary — gitignored
-├── data/                     # Runtime (gitignored): config.json, llm-ui.log
+├── data/                     # Runtime (gitignored): config.json, auth.json, llm-ui.log
+├── .env.example              # Environment variable reference
 ├── Dockerfile
 └── docker-compose.yml
 ```

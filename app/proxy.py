@@ -5,6 +5,7 @@ import math
 import time
 from collections.abc import AsyncGenerator
 from typing import Any
+from urllib.parse import urlparse
 
 import httpx
 from fastapi import HTTPException
@@ -50,6 +51,8 @@ async def proxy_stream(
     url: str = endpoint.get("serverUrl", "")
     if not url:
         raise HTTPException(status_code=422, detail="Endpoint missing serverUrl")
+    if urlparse(url).scheme not in ("http", "https"):
+        raise HTTPException(status_code=422, detail="serverUrl must use http or https scheme")
     if not endpoint.get("useRawUrl"):
         url = url.rstrip("/") + "/v1/chat/completions"
 
@@ -71,9 +74,10 @@ async def proxy_stream(
     if not response.is_success:
         error_text = await response.aread()
         await client.aclose()
+        logger.error("Upstream error %s for %s: %s", response.status_code, url, error_text.decode(errors="replace")[:500])
         raise HTTPException(
             status_code=response.status_code,
-            detail=error_text.decode(errors="replace")[:500],
+            detail=f"Upstream returned {response.status_code}",
         )
 
     async def _stream() -> AsyncGenerator[bytes, None]:
@@ -85,7 +89,13 @@ async def proxy_stream(
                     break
                 yield chunk
         finally:
-            await response.aclose()
-            await client.aclose()
+            try:
+                await response.aclose()
+            except Exception:
+                logger.warning("Error closing response for %s", url)
+            try:
+                await client.aclose()
+            except Exception:
+                logger.warning("Error closing client for %s", url)
 
     return _stream()

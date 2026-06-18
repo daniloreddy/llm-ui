@@ -10,6 +10,9 @@ venv/
 # Data runtime
 data/
 
+# Environment
+.env
+
 # Pytest / coverage
 .pytest_cache/
 .coverage

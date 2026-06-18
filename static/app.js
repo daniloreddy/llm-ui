@@ -1,5 +1,18 @@
 'use strict';
 
+// Redirect to /login on any 401 from /api/* (expired or missing session cookie)
+(function () {
+  const _orig = window.fetch;
+  window.fetch = async function (input, init) {
+    const res = await _orig.call(this, input, init);
+    const url = typeof input === 'string' ? input : (input && input.url) || '';
+    if (res.status === 401 && url.startsWith('/api/')) {
+      window.location.href = '/login';
+    }
+    return res;
+  };
+})();
+
 // ============================================================
 // Data model
 // ============================================================
@@ -278,6 +291,7 @@ function parseMarkdown(text) {
     html = html.replace(`LLMUI_THINK_${idx}`, buildThinkBlock(content));
   });
 
+  if (typeof DOMPurify !== 'undefined') html = DOMPurify.sanitize(html, { ADD_TAGS: ['details', 'summary'] });
   return html;
 }
 
@@ -417,7 +431,9 @@ function setStatus(state) {
 
 function logToPanel(idx, level, text) {
   const ts = new Date().toLocaleTimeString('it-IT', { hour12: false });
-  panelStates[idx].logs.push({ ts, level, text });
+  const logs = panelStates[idx].logs;
+  logs.push({ ts, level, text });
+  if (logs.length > 500) logs.shift();
   renderConsoleEl(idx);
 }
 

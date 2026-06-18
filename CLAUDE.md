@@ -27,11 +27,29 @@ The run scripts:
 
 | File | Role |
 |------|------|
-| `main.py` | FastAPI app — `/api/chat` (SSE proxy), `/api/config` (GET/PUT), `/api/endpoints/{id}/clone`, static file serving |
+| `main.py` | FastAPI app — auth middleware + routes (`/login`, `/auth/login`, `/auth/logout`), `/api/chat` (SSE proxy), `/api/config` (GET/PUT), static file serving |
+| `auth.py` | `AuthManager`: scrypt password hashing, JWT session cookies, per-IP + global rate limiting, trusted-proxy IP resolution |
 | `config.py` | `ConfigManager`: `asyncio.Lock`, atomic write via `.tmp` + `Path.replace()`, `copy.deepcopy` on read/write |
 | `proxy.py` | `proxy_stream()`: httpx async streaming proxy; `_clamp()`, `_build_payload()` |
 
-Config persisted to `data/config.json`. Docs disabled (`openapi_url=None`).
+Config persisted to `data/config.json`. Auth state in `data/auth.json`. Docs disabled (`openapi_url=None`).
+
+### Environment (`.env`)
+
+Loaded via `python-dotenv` at startup. Copy `.env.example` → `.env` and edit as needed.
+
+| Variable | Default | Description |
+|---|---|---|
+| `TRUSTED_PROXIES` | `127.0.0.1` | Comma-separated IPs of trusted reverse proxies (Cloudflare Tunnel, Apache, nginx) |
+| `AUTH_SECURE_COOKIE` | _(unset)_ | Set to `1` to force the session cookie `Secure` flag (not needed behind Cloudflare Tunnel) |
+
+### First run
+
+```bash
+python scripts/set_password.py
+```
+
+Must be run once before the app accepts any login. Password hash stored in `data/auth.json`.
 
 ### Frontend (`static/`)
 
