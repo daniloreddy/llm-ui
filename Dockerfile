@@ -7,7 +7,7 @@ RUN pip install --no-cache-dir -r requirements.txt
 
 COPY app/ ./app/
 COPY static/ ./static/
-COPY scripts/gen-tw.py ./scripts/
+COPY scripts/ ./scripts/
 
 # Generate static/tw.css at build time (Tailwind binary downloaded via Python stdlib)
 RUN python3 scripts/gen-tw.py
