@@ -79,20 +79,33 @@ See `.env.example` for tunable parameters (`TRUSTED_PROXIES`, `AUTH_SECURE_COOKI
 
 ## Docker
 
-The image is built and published automatically to GHCR on every push to `main`.
+The image is built and published automatically to GHCR on every push to `main`.  
+You only need `docker-compose.yml` and a `.env` file — no local clone required.
 
 ```bash
-# pull and start
+# 1. Download docker-compose.yml
+curl -O https://raw.githubusercontent.com/daniloreddy/llm-ui/main/docker-compose.yml
+
+# 2. Create .env (adjust values as needed)
+cat > .env <<'EOF'
+# IPs of trusted reverse proxies (Cloudflare Tunnel, Apache, nginx).
+# Default covers local proxy / Cloudflare Tunnel on the same host.
+TRUSTED_PROXIES=127.0.0.1
+
+# Uncomment to force the session cookie Secure flag (not needed behind Cloudflare Tunnel).
+# AUTH_SECURE_COOKIE=1
+EOF
+
+# 3. Pull and start
 docker compose pull
 docker compose up -d
 
-# first run: set the login password
+# 4. First run: set the login password
 docker compose exec llm-ui python scripts/set_password.py
 ```
 
 App available at [http://localhost:8050](http://localhost:8050).  
-Config, auth data and logs are persisted in `./data/` via a bind mount.  
-Environment variables are loaded from `.env` (copy `.env.example` first).
+Config, auth data and logs are persisted in `./data/` (created automatically).
 
 ## Configuration
 
