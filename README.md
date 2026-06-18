@@ -79,12 +79,20 @@ See `.env.example` for tunable parameters (`TRUSTED_PROXIES`, `AUTH_SECURE_COOKI
 
 ## Docker
 
+The image is built and published automatically to GHCR on every push to `main`.
+
 ```bash
-docker compose up
+# pull and start
+docker compose pull
+docker compose up -d
+
+# first run: set the login password
+docker compose exec llm-ui python scripts/set_password.py
 ```
 
 App available at [http://localhost:8050](http://localhost:8050).  
-Config and logs are persisted in `./data/` via a bind mount.
+Config, auth data and logs are persisted in `./data/` via a bind mount.  
+Environment variables are loaded from `.env` (copy `.env.example` first).
 
 ## Configuration
 

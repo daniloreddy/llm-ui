@@ -105,3 +105,16 @@ Frontend: `fetch` + `ReadableStream`, split on `\n`, parse `data: <json>`, appen
 Binary downloaded to `bin/` (gitignored) by `scripts/setup-tailwind.sh` / `.bat`.  
 Command: `./bin/tailwindcss -i static/input.css -o static/tw.css --minify`  
 `tw.css` is gitignored — regenerated on every `check` or `run`.
+
+### Docker / CI
+
+| File | Role |
+|------|------|
+| `Dockerfile` | Builds image: installs deps, copies `app/`, `static/`, `scripts/`, generates `tw.css` at build time via `scripts/gen-tw.py` |
+| `docker-compose.yml` | Server deploy — pulls `ghcr.io/daniloreddy/llm-ui:latest`, mounts `./data`, loads `.env` |
+| `.github/workflows/docker.yml` | Builds and pushes multi-arch image (amd64 + arm64) to GHCR on push to `main` or `v*` tags |
+
+First-run password setup in Docker:
+```bash
+docker compose exec llm-ui python scripts/set_password.py
+```
