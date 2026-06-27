@@ -2,8 +2,8 @@ from __future__ import annotations
 
 import asyncio
 import logging
-import logging.handlers
 import os
+import sys
 from contextlib import asynccontextmanager
 from pathlib import Path
 from typing import Any, AsyncGenerator
@@ -30,17 +30,10 @@ _LOGIN_HTML = Path("static/login.html")
 
 
 def _setup_logging() -> None:
-    log_path = Path("data/llm-ui.log")
-    log_path.parent.mkdir(parents=True, exist_ok=True)
     logging.basicConfig(
         level=logging.INFO,
         format="%(asctime)s %(levelname)s %(name)s — %(message)s",
-        handlers=[
-            logging.StreamHandler(),
-            logging.handlers.RotatingFileHandler(
-                log_path, maxBytes=5 * 1024 * 1024, backupCount=3, encoding="utf-8"
-            ),
-        ],
+        handlers=[logging.StreamHandler(sys.stdout)],
     )
 
 

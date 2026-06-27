@@ -1,8 +1,8 @@
 services:
   llm-ui:
-    image: ghcr.io/daniloreddy/llm-ui:latest
-    container_name: llm-ui
-    restart: unless-stopped
+    build: .
+    container_name: llm-ui-dev
+    restart: "no"
     ports:
       - "8050:8050"
     env_file:

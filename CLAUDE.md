@@ -17,9 +17,10 @@ scripts\run.bat       # Windows
 Open `http://127.0.0.1:8050` in the browser.
 
 The run scripts:
-1. Download the Tailwind CSS binary to `bin/` if missing (`setup-tailwind.sh/.bat`)
-2. Generate `static/tw.css` from `static/input.css` (`--minify`)
-3. Start uvicorn
+1. Auto-init venv (`venv/` on Windows, `.venv/` on Linux/macOS) and install deps if missing
+2. Download the Tailwind CSS binary to `bin/` if missing (`setup-tailwind.sh/.bat`)
+3. Generate `static/tw.css` from `static/input.css` (`--minify`)
+4. Start uvicorn
 
 ## Architecture
 
@@ -112,6 +113,7 @@ Command: `./bin/tailwindcss -i static/input.css -o static/tw.css --minify`
 |------|------|
 | `Dockerfile` | Builds image: installs deps, copies `app/`, `static/`, `scripts/`, generates `tw.css` at build time via `scripts/gen-tw.py` |
 | `docker-compose.yml` | Server deploy — pulls `ghcr.io/daniloreddy/llm-ui:latest`, mounts `./data`, loads `.env` |
+| `docker-compose-dev.yml` | Local dev — local build, `restart: "no"` |
 | `.github/workflows/docker.yml` | Builds and pushes multi-arch image (amd64 + arm64) to GHCR on push to `main` or `v*` tags |
 
 First-run password setup in Docker:

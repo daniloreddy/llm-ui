@@ -49,7 +49,7 @@ cp .env.example .env
 # edit .env if needed (defaults work for local / Cloudflare Tunnel)
 
 # 4. Set the login password (once)
-.venv\Scripts\python scripts/set_password.py
+python scripts/set_password.py
 
 # 5. Run
 scripts\run.bat        # Windows
@@ -105,7 +105,16 @@ docker compose exec llm-ui python scripts/set_password.py
 ```
 
 App available at [http://localhost:8050](http://localhost:8050).  
-Config, auth data and logs are persisted in `./data/` (created automatically).
+Config and auth data are persisted in `./data/` (created automatically). Logs go to stdout (`docker compose logs`).
+
+### Local development (build from source)
+
+```bash
+git clone https://github.com/daniloreddy/llm-ui.git
+cd llm-ui
+cp .env.example .env
+docker compose -f docker-compose-dev.yml up --build
+```
 
 ## Configuration
 
@@ -153,7 +162,7 @@ Endpoints are managed entirely from the UI (Settings tab). Each endpoint stores:
 │   ├── setup-tailwind.bat / .sh         # Download Tailwind CLI binary
 │   └── set_password.py                  # Set the login password
 ├── bin/                      # Tailwind CLI binary — gitignored
-├── data/                     # Runtime (gitignored): config.json, auth.json, llm-ui.log
+├── data/                     # Runtime (gitignored): config.json, auth.json
 ├── .env.example              # Environment variable reference
 ├── Dockerfile
 └── docker-compose.yml
