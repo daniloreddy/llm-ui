@@ -3,12 +3,15 @@
 .gitignore
 data/
 bin/
+debug/
+logs/
 venv/
 .venv/
 __pycache__/
 *.pyc
 *.pyo
 *.log
+tests/
 .pytest_cache/
 .ruff_cache/
 .mypy_cache/

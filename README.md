@@ -3,7 +3,7 @@
 A minimal chat interface for OpenAI-compatible LLM APIs.  
 Python/FastAPI backend acts as a proxy — no CORS issues, no build step, no framework.
 
-![Python](https://img.shields.io/badge/python-3.11%2B-blue)
+![Python](https://img.shields.io/badge/python-3.12%2B-blue)
 ![FastAPI](https://img.shields.io/badge/FastAPI-0.111%2B-009688)
 ![License](https://img.shields.io/badge/license-MIT-green)
 
@@ -29,7 +29,7 @@ Python/FastAPI backend acts as a proxy — no CORS issues, no build step, no fra
 
 ## Requirements
 
-- Python 3.11+
+- Python 3.12+
 - A running OpenAI-compatible LLM server (e.g. [llama.cpp](https://github.com/ggerganov/llama.cpp), Cloudflare AI Gateway, OpenRouter)
 
 ## Quick start
@@ -160,12 +160,14 @@ Endpoints are managed entirely from the UI (Settings tab). Each endpoint stores:
 │   ├── run.bat / run.sh                  # Start the server
 │   ├── check.bat / check.sh              # Tailwind + ruff + mypy + pytest
 │   ├── setup-tailwind.bat / .sh         # Download Tailwind CLI binary
+│   ├── gen-tw.py                        # Tailwind CSS generator for Docker build
 │   └── set_password.py                  # Set the login password
 ├── bin/                      # Tailwind CLI binary — gitignored
 ├── data/                     # Runtime (gitignored): config.json, auth.json
 ├── .env.example              # Environment variable reference
 ├── Dockerfile
-└── docker-compose.yml
+├── docker-compose.yml
+└── docker-compose-dev.yml
 ```
 
 ## Development
